@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import { db } from '../../database/db.js';
+import { deliverModmailToStaff } from '../../services/modmailService.js';
 
 export const data = new SlashCommandBuilder()
   .setName('modmail')
@@ -20,8 +21,8 @@ export const data = new SlashCommandBuilder()
   )
   .addSubcommand(sub =>
     sub.setName('close')
-      .setDescription('Staff: Close an active modmail ticket')
-      .addUserOption(opt => opt.setName('user').setDescription('Target member').setRequired(true))
+      .setDescription('Staff: Close an active modmail ticket/thread')
+      .addUserOption(opt => opt.setName('user').setDescription('Target member (optional if inside ticket thread)'))
       .addStringOption(opt => opt.setName('reason').setDescription('Reason for closing'))
   );
 
@@ -35,35 +36,19 @@ export async function execute(interaction) {
     const userMessage = interaction.options.getString('message');
     const user = interaction.user;
 
-    // Find the configured modmail channel
-    const channelId = await db.getModmailChannel(interaction.guild.id);
-    const staffChannel = channelId ? interaction.guild.channels.cache.get(channelId) : null;
-
-    if (!staffChannel) {
-      return interaction.reply({
-        content: 'ℹ️ The Modmail inbox channel is not yet configured on this server. A staff member needs to run `/modmail-setup <channel>`.',
-        ephemeral: true
-      });
-    }
-
     // If member provided a message directly in the slash command
     if (userMessage) {
-      const staffEmbed = new EmbedBuilder()
-        .setColor(0x3498db)
-        .setAuthor({
-          name: `${user.tag} (${user.id})`,
-          iconURL: user.displayAvatarURL({ dynamic: true })
-        })
-        .setTitle('📬 Incoming Modmail')
-        .setDescription(userMessage)
-        .setFooter({ text: `User ID: ${user.id} • Use Discord Reply on this message to respond` })
-        .setTimestamp();
+      await interaction.deferReply({ ephemeral: true });
 
       try {
-        await staffChannel.send({ embeds: [staffEmbed] });
-        await db.setModmail(user.id, staffChannel.id);
+        await deliverModmailToStaff(
+          interaction.client,
+          user,
+          userMessage,
+          []
+        );
 
-        // Send copy to user DMs
+        // Send confirmation copy to user DMs
         const userConfirmEmbed = new EmbedBuilder()
           .setColor(0x2ecc71)
           .setTitle('✅ Modmail Delivered to Elder Staff')
@@ -73,15 +58,13 @@ export async function execute(interaction) {
 
         await user.send({ embeds: [userConfirmEmbed] }).catch(() => {});
 
-        return interaction.reply({
-          content: '✅ **Your Modmail has been sent to the Elder Staff Team!** Staff will reply to you in your DMs.',
-          ephemeral: true
+        return interaction.editReply({
+          content: '✅ **Your Modmail has been sent to the Elder Staff Team!** Staff will reply to you directly in your DMs.',
         });
       } catch (err) {
         console.error('[MODMAIL SEND ERROR]', err);
-        return interaction.reply({
-          content: '❌ Failed to deliver message to staff. Please try again.',
-          ephemeral: true
+        return interaction.editReply({
+          content: `❌ Could not deliver message: ${err.message}`,
         });
       }
     }
@@ -123,10 +106,9 @@ export async function execute(interaction) {
     });
   }
 
-  const targetUser = interaction.options.getUser('user');
-
   // 2. STAFF: REPLY
   if (subcommand === 'reply') {
+    const targetUser = interaction.options.getUser('user');
     const replyText = interaction.options.getString('message');
 
     const dmEmbed = new EmbedBuilder()
@@ -160,20 +142,51 @@ export async function execute(interaction) {
 
   // 3. STAFF: CLOSE
   if (subcommand === 'close') {
-    const reason = interaction.options.getString('reason') || 'No reason provided';
+    let targetUser = interaction.options.getUser('user');
+    const reason = interaction.options.getString('reason') || 'Ticket resolved';
+
+    // If user not provided, check if command is being run inside the user's thread
+    if (!targetUser && interaction.channel.isThread()) {
+      const threadUserId = await db.getUserByThread(interaction.channel.id);
+      if (threadUserId) {
+        try {
+          targetUser = await interaction.client.users.fetch(threadUserId);
+        } catch (e) {}
+      }
+    }
+
+    if (!targetUser) {
+      return interaction.reply({
+        content: '❌ Please specify the user to close, or run `/modmail close` inside their active ticket thread.',
+        ephemeral: true
+      });
+    }
+
     await db.closeModmail(targetUser.id);
 
     const closeDmEmbed = new EmbedBuilder()
       .setColor(0xe74c3c)
       .setTitle('🔒 Modmail Ticket Closed')
       .setDescription(`Your support ticket with **${interaction.guild.name}** has been closed by staff.\n**Reason:** ${reason}`)
-      .setFooter({ text: 'You can send a new DM anytime if you need assistance again.' })
+      .setFooter({ text: 'You can send a new DM or use /modmail anytime if you need assistance again.' })
       .setTimestamp();
 
     try {
       await targetUser.send({ embeds: [closeDmEmbed] });
     } catch {
       // DMs closed, ignore
+    }
+
+    // If run inside thread, archive thread
+    if (interaction.channel.isThread()) {
+      await interaction.reply({ content: `✅ Ticket with ${targetUser} closed. Archiving thread...` });
+      setTimeout(async () => {
+        try {
+          await interaction.channel.setLocked(true);
+          await interaction.channel.setArchived(true);
+        } catch (e) {}
+      }, 2000);
+      return;
     }
 
     return interaction.reply({ content: `✅ Modmail ticket with ${targetUser} has been closed.` });

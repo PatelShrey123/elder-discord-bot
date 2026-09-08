@@ -3,7 +3,7 @@ import {
   EmbedBuilder
 } from 'discord.js';
 import { pendingDMs } from './messageCreate.js';
-import { db } from '../database/db.js';
+import { deliverModmailToStaff } from '../services/modmailService.js';
 
 export const name = Events.InteractionCreate;
 
@@ -51,39 +51,13 @@ export async function execute(interaction) {
       }
 
       try {
-        const staffChannel = await interaction.client.channels.fetch(pending.targetChannelId);
+        await deliverModmailToStaff(
+          interaction.client,
+          user,
+          pending.content,
+          pending.attachments
+        );
 
-        if (!staffChannel) {
-          return interaction.update({
-            content: '❌ Could not reach the staff channel. Please try again later.',
-            components: []
-          });
-        }
-
-        // Build staff embed
-        const staffEmbed = new EmbedBuilder()
-          .setColor(0x3498db)
-          .setAuthor({
-            name: `${user.tag} (${user.id})`,
-            iconURL: user.displayAvatarURL({ dynamic: true })
-          })
-          .setTitle('📬 Incoming Modmail')
-          .setDescription(pending.content || '*(No text provided)*')
-          .setFooter({ text: `User ID: ${user.id} • Use Discord Reply on this message to respond` })
-          .setTimestamp();
-
-        // Attachments
-        if (pending.attachments && pending.attachments.length > 0) {
-          const urls = pending.attachments.map(a => a.url).join('\n');
-          staffEmbed.addFields({ name: 'Attachments', value: urls });
-          const firstImg = pending.attachments.find(a => a.contentType && a.contentType.startsWith('image/'));
-          if (firstImg) staffEmbed.setImage(firstImg.url);
-        }
-
-        await staffChannel.send({ embeds: [staffEmbed] });
-
-        // Save modmail state in db
-        await db.setModmail(user.id, staffChannel.id);
         pendingDMs.delete(user.id);
 
         const successEmbed = new EmbedBuilder()
@@ -100,7 +74,7 @@ export async function execute(interaction) {
       } catch (err) {
         console.error('[CONFIRM MODMAIL ERROR]', err);
         return interaction.update({
-          content: `❌ Error sending modmail: ${err.message}`,
+          content: `❌ Error delivering modmail: ${err.message}`,
           components: []
         });
       }

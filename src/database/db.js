@@ -599,6 +599,22 @@ class DatabaseService {
     }
   }
 
+  async getUserByThread(threadId) {
+    if (this.mode === 'supabase') {
+      try {
+        const { data } = await this.supabase
+          .from('modmail')
+          .select('*')
+          .eq('thread_id', threadId)
+          .eq('status', 'open')
+          .maybeSingle();
+        if (data) return data.user_id;
+      } catch (e) {}
+    }
+    const found = Object.values(this.localData.modmail).find(m => m.threadId === threadId && m.status === 'open');
+    return found ? found.userId : null;
+  }
+
   // ==========================================
   // MODMAIL CHANNEL CONFIGURATION
   // ==========================================

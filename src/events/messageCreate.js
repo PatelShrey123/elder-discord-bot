@@ -9,7 +9,7 @@ import { db } from '../database/db.js';
 
 export const name = Events.MessageCreate;
 
-// Cache pending DMs awaiting confirmation: userId => { content, attachments, promptMsgId }
+// Cache pending DMs awaiting confirmation: userId => { content, attachments }
 export const pendingDMs = new Map();
 
 export async function execute(message) {
@@ -18,11 +18,12 @@ export async function execute(message) {
   const client = message.client;
 
   // =========================================================
-  // 1. GUILD MESSAGES (.modmail command & Staff native replies)
+  // 1. GUILD MESSAGES (.modmail command, Threads, & Staff replies)
   // =========================================================
   if (message.guild) {
     const content = message.content.trim();
 
+    // A. Handle .modmail / .modmaill / @Bot modmail
     const lower = content.toLowerCase();
     const isModmailPrefix = lower === '.modmail' || lower === '.modmaill' || lower.startsWith('.modmail ') || lower.startsWith('.modmaill ');
     const isBotMention = message.mentions.has(client.user.id) && (lower.includes('modmail') || content.trim() === `<@${client.user.id}>` || content.trim() === `<@!${client.user.id}>`);
@@ -35,7 +36,7 @@ export async function execute(message) {
           .setDescription(
             `👋 Hello **${message.author.username}**!\n\n` +
             `Please reply to this DM with the message, report, or question you want to send to the **Elder Staff Team**.\n\n` +
-            `*(You will be asked to confirm before your message is sent to staff!)*`
+            `*(You can also use the slash command \`/modmail send\` directly in the server!)*`
           )
           .setFooter({ text: 'Elder Clan Modmail Support' })
           .setTimestamp();
@@ -50,23 +51,60 @@ export async function execute(message) {
         });
       } catch (dmErr) {
         await message.reply({
-          content: `❌ ${message.author}, could not DM you! Please make sure **"Allow direct messages from server members"** is enabled in your Discord Privacy Settings.`
+          content: `❌ ${message.author}, could not DM you! Please make sure **"Allow direct messages from server members"** is enabled in your Discord Privacy Settings, or use \`/modmail send\`.`
         });
       }
       return;
     }
 
-    // B. Check if message is in the configured Modmail Channel
+    // B. Handle Staff Messages inside a Dedicated Modmail Thread!
+    if (message.channel.isThread()) {
+      const targetUserId = await db.getUserByThread(message.channel.id);
+
+      if (targetUserId) {
+        // Staff simply typed inside the user's modmail thread!
+        try {
+          const targetUser = await client.users.fetch(targetUserId);
+
+          if (targetUser) {
+            const staffReplyEmbed = new EmbedBuilder()
+              .setColor(0x2ecc71)
+              .setAuthor({
+                name: `Elder Staff Team (from ${message.author.username})`,
+                iconURL: message.author.displayAvatarURL({ dynamic: true })
+              })
+              .setDescription(message.content || '*(Attachment sent)*')
+              .setFooter({ text: 'Reply to this DM to continue your conversation with staff.' })
+              .setTimestamp();
+
+            if (message.attachments.size > 0) {
+              const attachmentUrls = message.attachments.map(a => a.url).join('\n');
+              staffReplyEmbed.addFields({ name: 'Attachments', value: attachmentUrls });
+              const firstImg = message.attachments.find(a => a.contentType && a.contentType.startsWith('image/'));
+              if (firstImg) staffReplyEmbed.setImage(firstImg.url);
+            }
+
+            await targetUser.send({ embeds: [staffReplyEmbed] });
+            await message.react('✅').catch(() => {});
+            return;
+          }
+        } catch (err) {
+          console.error('[THREAD STAFF REPLY ERROR]', err);
+          await message.reply('❌ Could not deliver reply to user. Their DMs may be closed.').catch(() => {});
+          return;
+        }
+      }
+    }
+
+    // C. Check if message is a native Reply in the main Modmail channel
     const configuredChannelId = await db.getModmailChannel(message.guild.id);
 
     if (configuredChannelId && message.channel.id === configuredChannelId) {
-      // Check if this is a native Discord Reply to a previous modmail message
       if (message.reference && message.reference.messageId) {
         try {
           const referencedMessage = await message.channel.messages.fetch(message.reference.messageId);
 
           if (referencedMessage && referencedMessage.author.id === client.user.id) {
-            // Extract the user ID from the bot's embed footer
             const footerText = referencedMessage.embeds[0]?.footer?.text || '';
             const match = footerText.match(/User ID:\s*(\d+)/i);
 
@@ -100,13 +138,10 @@ export async function execute(message) {
           }
         } catch (err) {
           console.error('[NATIVE MODMAIL REPLY ERROR]', err);
-          await message.reply('❌ Could not deliver reply to user. Their DMs may be closed.').catch(() => {});
+          await message.reply('❌ Could not deliver reply to user.').catch(() => {});
           return;
         }
       }
-
-      // If NOT a reply, staff is chatting casually in the channel -> DO NOTHING!
-      return;
     }
 
     return;
@@ -116,26 +151,10 @@ export async function execute(message) {
   // 2. DIRECT MESSAGES (DMs to the Bot with Confirmation Safeguard)
   // =========================================================
   if (!message.guild) {
-    // Helper to get target modmail channel from active guilds
-    let targetChannel = null;
-    for (const [, guild] of client.guilds.cache) {
-      const channelId = await db.getModmailChannel(guild.id);
-      if (channelId && guild.channels.cache.has(channelId)) {
-        targetChannel = guild.channels.cache.get(channelId);
-        break;
-      }
-    }
-
-    if (!targetChannel) {
-      return message.reply('ℹ️ The Elder Modmail inbox is not yet configured on any server. A staff member needs to run `/modmail-setup <channel>`.');
-    }
-
     // Save pending DM data for confirmation
     pendingDMs.set(message.author.id, {
       content: message.content,
-      attachments: Array.from(message.attachments.values()),
-      targetChannelId: targetChannel.id,
-      guildId: targetChannel.guild.id
+      attachments: Array.from(message.attachments.values())
     });
 
     const previewContent = message.content ? `> "${message.content.substring(0, 300)}"` : '*(Attachment/File)*';
