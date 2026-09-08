@@ -46,7 +46,11 @@ const rest = new REST().setToken(token);
 
     let data;
     if (guildId) {
-      // Guild-specific registration (instant updates for testing)
+      // Clear global commands to prevent duplicate entries showing in Discord
+      await rest.put(Routes.applicationCommands(clientId), { body: [] });
+      console.log('Cleared global commands to prevent duplicates.');
+
+      // Guild-specific registration (instant updates)
       data = await rest.put(
         Routes.applicationGuildCommands(clientId, guildId),
         { body: commands }
