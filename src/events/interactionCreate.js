@@ -5,7 +5,8 @@ import {
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
-  ButtonStyle
+  ButtonStyle,
+  AttachmentBuilder
 } from 'discord.js';
 import { db } from '../database/db.js';
 
@@ -37,19 +38,25 @@ export async function execute(interaction) {
     return;
   }
 
-  // 2. Handle Button Interactions (Tickets)
+  // 2. Handle Button Interactions (Ticket Tool Suite)
   if (interaction.isButton()) {
     const customId = interaction.customId;
+    const guild = interaction.guild;
+    const user = interaction.user;
 
-    // A. Open Ticket Button
+    if (!guild) return;
+
+    const config = await db.getTicketConfig(guild.id);
+
+    // A. OPEN TICKET
     if (customId === 'btn_create_ticket') {
       await interaction.deferReply({ ephemeral: true });
 
-      const guild = interaction.guild;
-      const user = interaction.user;
-      const ticketId = `ticket-${user.username.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const ticketNumber = Math.floor(1000 + Math.random() * 9000);
+      const cleanUsername = user.username.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15);
+      const channelName = `ticket-${cleanUsername}-${ticketNumber}`;
 
-      // Setup permission overwrites
+      // Build permission overwrites
       const permissionOverwrites = [
         {
           id: guild.roles.everyone.id,
@@ -72,58 +79,103 @@ export async function execute(interaction) {
             PermissionFlagsBits.SendMessages,
             PermissionFlagsBits.ManageChannels,
             PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.AttachFiles,
           ],
         }
       ];
 
-      // If a staff role is specified in .env, add them
-      if (process.env.STAFF_ROLE_ID && guild.roles.cache.has(process.env.STAFF_ROLE_ID)) {
-        permissionOverwrites.push({
-          id: process.env.STAFF_ROLE_ID,
-          allow: [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.ReadMessageHistory,
-            PermissionFlagsBits.AttachFiles,
-          ],
-        });
+      // Add all configured support roles
+      const supportRoles = config.supportRoles || [];
+      // Also include process.env.STAFF_ROLE_ID if present
+      if (process.env.STAFF_ROLE_ID && !supportRoles.includes(process.env.STAFF_ROLE_ID)) {
+        supportRoles.push(process.env.STAFF_ROLE_ID);
+      }
+
+      for (const roleId of supportRoles) {
+        if (guild.roles.cache.has(roleId)) {
+          permissionOverwrites.push({
+            id: roleId,
+            allow: [
+              PermissionFlagsBits.ViewChannel,
+              PermissionFlagsBits.SendMessages,
+              PermissionFlagsBits.ReadMessageHistory,
+              PermissionFlagsBits.AttachFiles,
+              PermissionFlagsBits.EmbedLinks,
+            ],
+          });
+        }
       }
 
       try {
-        const ticketChannel = await guild.channels.create({
-          name: ticketId,
+        const createOptions = {
+          name: channelName,
           type: ChannelType.GuildText,
           permissionOverwrites,
-        });
+        };
+
+        // Attach to category if configured
+        if (config.categoryId && guild.channels.cache.has(config.categoryId)) {
+          createOptions.parent = config.categoryId;
+        }
+
+        const ticketChannel = await guild.channels.create(createOptions);
 
         // Record in database
-        await db.createTicket(ticketChannel.id, ticketId, user.id);
+        await db.createTicket(ticketChannel.id, channelName, user.id, config.categoryId);
 
-        // Send greeting in the new channel
+        // Build welcome embed
+        const welcomeText = (config.ticketMessage || 'Hello {user}! Welcome to your support ticket.')
+          .replace('{user}', `<@${user.id}>`);
+
         const welcomeEmbed = new EmbedBuilder()
           .setColor(0x5865f2)
-          .setTitle(`🎫 Ticket: ${ticketId}`)
-          .setDescription(
-            `Hello ${user}, welcome to your support ticket!\n\n` +
-            `Please state your request, clan application details, or question. A member of the **Elder Clan Staff** will be with you shortly.\n\n` +
-            `Click the **Close Ticket** button below when you are finished.`
+          .setTitle(`🎫 ${channelName.toUpperCase()}`)
+          .setDescription(`${welcomeText}\n\nOur staff team will assist you shortly.`)
+          .addFields(
+            { name: 'Opened By', value: `<@${user.id}> (\`${user.id}\`)`, inline: true },
+            { name: 'Status', value: '🟢 Open / Unclaimed', inline: true }
           )
-          .setFooter({ text: 'Elder Clan Ticket System' })
+          .setFooter({ text: 'Elder Ticket Tool • Use buttons below to manage' })
           .setTimestamp();
 
-        const closeButton = new ButtonBuilder()
+        const btnClose = new ButtonBuilder()
           .setCustomId('btn_close_ticket')
-          .setLabel('Close Ticket')
+          .setLabel('Close')
           .setEmoji('🔒')
           .setStyle(ButtonStyle.Danger);
 
-        const row = new ActionRowBuilder().addComponents(closeButton);
+        const btnClaim = new ButtonBuilder()
+          .setCustomId('btn_claim_ticket')
+          .setLabel('Claim')
+          .setEmoji('🙋')
+          .setStyle(ButtonStyle.Success);
+
+        const btnTranscript = new ButtonBuilder()
+          .setCustomId('btn_transcript_ticket')
+          .setLabel('Transcript')
+          .setEmoji('📋')
+          .setStyle(ButtonStyle.Secondary);
+
+        const actionRow = new ActionRowBuilder().addComponents(btnClose, btnClaim, btnTranscript);
+
+        const roleMentions = supportRoles.map(r => `<@&${r}>`).join(' ');
 
         await ticketChannel.send({
-          content: `${user} ${process.env.STAFF_ROLE_ID ? `<@&${process.env.STAFF_ROLE_ID}>` : ''}`,
+          content: `${user} ${roleMentions}`,
           embeds: [welcomeEmbed],
-          components: [row]
+          components: [actionRow]
         });
+
+        // If logging channel is set, log creation
+        if (config.loggingChannelId && guild.channels.cache.has(config.loggingChannelId)) {
+          const logChannel = guild.channels.cache.get(config.loggingChannelId);
+          const logEmbed = new EmbedBuilder()
+            .setColor(0x2ecc71)
+            .setTitle('📥 Ticket Created')
+            .setDescription(`Ticket ${ticketChannel} created by ${user} (\`${user.id}\`).`)
+            .setTimestamp();
+          await logChannel.send({ embeds: [logEmbed] }).catch(() => {});
+        }
 
         await interaction.editReply({
           content: `✅ Your ticket has been created: ${ticketChannel}`,
@@ -137,17 +189,88 @@ export async function execute(interaction) {
       return;
     }
 
-    // B. Close Ticket Button
+    // B. CLAIM TICKET
+    if (customId === 'btn_claim_ticket') {
+      const ticket = await db.getTicket(interaction.channel.id);
+      if (!ticket) {
+        return interaction.reply({ content: '❌ This channel is not an active ticket.', ephemeral: true });
+      }
+
+      await db.claimTicket(interaction.channel.id, user.tag || user.username);
+
+      const claimEmbed = new EmbedBuilder()
+        .setColor(0x2ecc71)
+        .setDescription(`🙋 **${user} has claimed this ticket!** They will be handling your request.`);
+
+      await interaction.reply({ embeds: [claimEmbed] });
+      return;
+    }
+
+    // C. TRANSCRIPT
+    if (customId === 'btn_transcript_ticket') {
+      await interaction.deferReply({ ephemeral: true });
+      const messages = await interaction.channel.messages.fetch({ limit: 100 });
+      const transcriptLines = Array.from(messages.values()).reverse().map(m => {
+        const time = m.createdAt.toISOString().replace('T', ' ').substring(0, 19);
+        return `[${time}] ${m.author.tag}: ${m.content || (m.attachments.size ? '[Attachment]' : '')}`;
+      }).join('\n');
+
+      const buffer = Buffer.from(transcriptLines, 'utf-8');
+      const attachment = new AttachmentBuilder(buffer, { name: `transcript-${interaction.channel.name}.txt` });
+
+      await interaction.editReply({
+        content: `📄 Here is the transcript for **${interaction.channel.name}**:`,
+        files: [attachment]
+      });
+      return;
+    }
+
+    // D. CLOSE TICKET
     if (customId === 'btn_close_ticket') {
       await interaction.reply({
-        content: '🔒 Ticket will be closed and deleted in **5 seconds**...',
+        content: '🔒 Ticket closing in **5 seconds**... Generating transcript and logging.',
       });
 
-      await db.closeTicket(interaction.channel.id, interaction.user.tag || interaction.user.username);
+      const channel = interaction.channel;
+      const closedBy = `${user.tag || user.username} (${user.id})`;
+
+      // Fetch transcript
+      let transcriptAttachment = null;
+      try {
+        const messages = await channel.messages.fetch({ limit: 100 });
+        const transcriptLines = Array.from(messages.values()).reverse().map(m => {
+          const time = m.createdAt.toISOString().replace('T', ' ').substring(0, 19);
+          return `[${time}] ${m.author.tag}: ${m.content || (m.attachments.size ? '[Attachment]' : '')}`;
+        }).join('\n');
+        const buffer = Buffer.from(transcriptLines, 'utf-8');
+        transcriptAttachment = new AttachmentBuilder(buffer, { name: `transcript-${channel.name}.txt` });
+      } catch (e) {
+        // ignore
+      }
+
+      await db.closeTicket(channel.id, closedBy);
+
+      // Send to log channel if configured
+      if (config.loggingChannelId && guild.channels.cache.has(config.loggingChannelId)) {
+        const logChannel = guild.channels.cache.get(config.loggingChannelId);
+        const logEmbed = new EmbedBuilder()
+          .setColor(0xe74c3c)
+          .setTitle('🔒 Ticket Closed & Deleted')
+          .addFields(
+            { name: 'Ticket Name', value: `\`${channel.name}\``, inline: true },
+            { name: 'Closed By', value: `${user} (\`${user.id}\`)`, inline: true }
+          )
+          .setTimestamp();
+
+        await logChannel.send({
+          embeds: [logEmbed],
+          files: transcriptAttachment ? [transcriptAttachment] : []
+        }).catch(() => {});
+      }
 
       setTimeout(async () => {
         try {
-          await interaction.channel.delete('Ticket closed by user or staff');
+          await channel.delete(`Closed by ${user.tag}`);
         } catch (err) {
           console.error('[DELETE TICKET ERROR]', err);
         }

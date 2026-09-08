@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Elder Ticket Tool — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #131722;
+      --bg-sidebar: #0f121a;
+      --bg-card: #1c2130;
+      --bg-card-hover: #22283a;
+      --bg-input: #151926;
+      --border-color: #272d42;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --green: #10b981;
+      --green-hover: #059669;
+      --danger: #ef4444;
+      --gold: #f59e0b;
+      --pill-bg: #2d3748;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navbar */
+    .navbar {
+      height: 60px;
+      background: var(--bg-sidebar);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: 0.5px;
+      color: #fff;
+    }
+    .logo-icon {
+      background: linear-gradient(135deg, #6366f1, #3b82f6);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #fff; }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-card);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #4f46e5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+    }
+
+    /* Main Container */
+    .dashboard-layout {
+      display: flex;
+      flex: 1;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      padding: 20px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .guild-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+    .guild-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #2b2d31;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--gold);
+      font-size: 1.2rem;
+      overflow: hidden;
+    }
+    .guild-icon img { width: 100%; height: 100%; object-fit: cover; }
+    .guild-info h4 { font-size: 0.95rem; font-weight: 700; }
+    .guild-info span { font-size: 0.78rem; color: var(--text-muted); }
+
+    .side-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .side-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .side-item:hover, .side-item.active {
+      background: rgba(59, 130, 246, 0.15);
+      color: #fff;
+    }
+    .side-item.active {
+      border-left: 3px solid var(--primary);
+    }
+
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      padding: 30px 40px;
+      overflow-y: auto;
+      max-width: 1200px;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Cards Grid */
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 18px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .feature-card:hover {
+      background: var(--bg-card-hover);
+      border-color: #3b82f6;
+    }
+    .feature-card h5 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+    .feature-card p { font-size: 0.78rem; color: var(--text-muted); }
+    .feature-arrow { color: var(--text-muted); font-size: 1.2rem; }
+
+    /* Main Config Box */
+    .config-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+    .config-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .config-box-header h4 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) {
+      .form-row { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .form-group label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .help-icon {
+      color: var(--text-muted);
+      cursor: help;
+      font-size: 0.8rem;
+    }
+
+    .form-control, select, input, textarea {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-control:focus, select:focus, input:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+
+    /* Pills Container for Roles */
+    .pills-container {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px;
+      min-height: 48px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .role-pill {
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      color: #93c5fd;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill-close {
+      cursor: pointer;
+      color: #cbd5e1;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .pill-close:hover { color: var(--danger); }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-green {
+      background: var(--green);
+      color: #fff;
+    }
+    .btn-green:hover { background: var(--green-hover); }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: #cbd5e1;
+    }
+    .btn-outline:hover { background: var(--bg-card-hover); color: #fff; }
+
+    .button-group {
+      display: flex;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      width: 90%;
+      max-width: 550px;
+      padding: 24px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #10b981;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 200;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="logo">
+        <div class="logo-icon">🛡️</div>
+        <span>ELDER TICKET TOOL</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#panel">Panel Configs</a></li>
+        <li><a href="https://discord.com/oauth2/authorize?client_id=1546875727201181847&permissions=8&scope=bot%20applications.commands" target="_blank">Bot Invite</a></li>
+        <li><a href="https://github.com/PatelShrey123/elder-discord-bot" target="_blank">GitHub Repo</a></li>
+      </ul>
+    </div>
+    <div class="nav-right">
+      <div class="user-profile" id="user-badge">
+        <div class="user-avatar" id="user-avatar-initial">X</div>
+        <span id="user-name-display">Verifying Access...</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="guild-badge">
+        <div class="guild-icon" id="guild-avatar">👑</div>
+        <div class="guild-info">
+          <h4 id="guild-name">Elder Clan</h4>
+          <span id="guild-members">679 members</span>
+        </div>
+      </div>
+
+      <nav class="side-nav">
+        <div class="side-item active">📊 Panel Configs</div>
+        <div class="side-item" onclick="alert('Feature coming in v1.1')">⚙️ Server Info</div>
+        <div class="side-item" onclick="alert('Manage commands directly in Discord!')">🤖 Command Configs</div>
+        <div class="side-item" onclick="alert('Transcripts are active!')">📜 Dashboard History</div>
+        <div class="side-item" onclick="alert('Statistics sync live with Discord!')">📈 Statistics</div>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content-area">
+      <div class="section-title">
+        <span>⚙️</span>
+        <span>Ticket Tool — Panel Configs</span>
+      </div>
+
+      <!-- Quick Feature Cards -->
+      <div class="grid-cards">
+        <div class="feature-card" onclick="openModal('panelModal')">
+          <div>
+            <h5>Panel Message</h5>
+            <p>Customize embed title, description & color</p>
+          </div>
+          <span class="feature-arrow">›</span>
+        </div>
+        <div class="feature-card" onclick="openModal('ticketModal')">
+          <div>
+            <h5>Ticket Message</h5>
+            <p>Welcome greeting sent inside new tickets</p>
+          </div>
+          <span class="feature-arrow">›</span>
+        </div>
+        <div class="feature-card" onclick="document.getElementById('loggingChannelSelect').focus()">
+          <div>
+            <h5>Logging & Transcripts</h5>
+            <p>Save transcripts when closed</p>
+          </div>
+          <span class="feature-arrow">›</span>
+        </div>
+        <div class="feature-card" onclick="alert('Claiming button is enabled inside all tickets!')">
+          <div>
+            <h5>Claiming System</h5>
+            <p>Allow staff to claim open tickets</p>
+          </div>
+          <span class="feature-arrow">›</span>
+        </div>
+      </div>
+
+      <!-- Frequently Used Configs Box -->
+      <div class="config-box">
+        <div class="config-box-header">
+          <h4>📁 Frequently Used Configs</h4>
+          <span style="font-size: 0.8rem; color: var(--gold);">⚡ Live Synced with Discord</span>
+        </div>
+
+        <div class="form-row">
+          <!-- Support Team Roles -->
+          <div class="form-group">
+            <label>
+              Support Team Roles
+              <span class="help-icon" title="Roles with permission to view and answer tickets">ℹ️</span>
+            </label>
+            <div class="pills-container" id="roles-pills-box">
+              <!-- Dynamically populated pills -->
+            </div>
+            <select id="role-selector" onchange="addSelectedRole(this.value)">
+              <option value="">+ Add a Support Role...</option>
+            </select>
+          </div>
+
+          <!-- Category Created/Opened -->
+          <div class="form-group">
+            <label>
+              Category Created/Opened
+              <span class="help-icon" title="Category where new ticket channels will be created">ℹ️</span>
+            </label>
+            <select id="category-selector">
+              <option value="">Loading categories...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <!-- Logging Channel -->
+          <div class="form-group">
+            <label>Logging & Transcripts Channel</label>
+            <select id="loggingChannelSelect">
+              <option value="">Disabled</option>
+            </select>
+          </div>
+
+          <!-- Channel to Deploy Panel -->
+          <div class="form-group">
+            <label>Target Channel to Post Ticket Panel</label>
+            <select id="panelChannelSelect">
+              <option value="">Select channel...</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="button-group">
+          <button class="btn btn-green" onclick="saveConfiguration()">
+            <span>💾</span> Save Config
+          </button>
+          <button class="btn btn-primary" onclick="deployPanel()">
+            <span>🚀</span> Save & Deploy Panel to Discord
+          </button>
+          <button class="btn btn-outline" onclick="openModal('panelModal')">
+            <span>✏️</span> Edit Panel Message
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Panel Message Modal -->
+  <div class="modal-overlay" id="panelModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit Ticket Panel Embed</h3>
+        <button class="modal-close" onclick="closeModal('panelModal')">×</button>
+      </div>
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>Panel Embed Title</label>
+        <input type="text" id="panelTitleInput" value="📩 Elder Clan Applications & Support">
+      </div>
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>Panel Embed Description</label>
+        <textarea id="panelDescInput" rows="4">Click the button below to open a private ticket with our staff!</textarea>
+      </div>
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>Button Label</label>
+        <input type="text" id="buttonTextInput" value="Open Ticket">
+      </div>
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label>Embed Color (Hex)</label>
+        <input type="text" id="panelColorInput" value="#5865f2">
+      </div>
+      <button class="btn btn-primary" style="width: 100%;" onclick="closeModal('panelModal'); saveConfiguration();">Apply Changes</button>
+    </div>
+  </div>
+
+  <!-- Ticket Message Modal -->
+  <div class="modal-overlay" id="ticketModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit Ticket Welcome Message</h3>
+        <button class="modal-close" onclick="closeModal('ticketModal')">×</button>
+      </div>
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label>Message Content (Use {user} for user mention)</label>
+        <textarea id="ticketMessageInput" rows="5">Hello {user}! Welcome to your support ticket.
+Please state your request or application details. Our support team will assist you shortly.</textarea>
+      </div>
+      <button class="btn btn-primary" style="width: 100%;" onclick="closeModal('ticketModal'); saveConfiguration();">Apply Changes</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast">✅ Saved successfully!</div>
+
+  <script>
+    let serverData = null;
+    let selectedRoles = [];
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3000);
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    // Fetch live guild data from backend
+    async function loadDashboardData() {
+      try {
+        const res = await fetch('/api/guild-data');
+        if (!res.ok) throw new Error('Could not fetch guild data');
+        serverData = await res.json();
+
+        // Update Guild Header
+        if (serverData.guild) {
+          document.getElementById('guild-name').textContent = serverData.guild.name || 'Elder Clan';
+          document.getElementById('guild-members').textContent = `${serverData.guild.memberCount || 679} members`;
+          if (serverData.guild.icon) {
+            document.getElementById('guild-avatar').innerHTML = `<img src="${serverData.guild.icon}">`;
+          }
+        }
+
+        // Update User info
+        document.getElementById('user-name-display').textContent = 'Staff / Owner Verified ✅';
+
+        // Populate Categories
+        const catSelect = document.getElementById('category-selector');
+        catSelect.innerHTML = '<option value="">Server Root (No Category)</option>';
+        serverData.categories.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.name;
+          catSelect.appendChild(opt);
+        });
+
+        // Populate Channels
+        const logSelect = document.getElementById('loggingChannelSelect');
+        const panelSelect = document.getElementById('panelChannelSelect');
+        logSelect.innerHTML = '<option value="">Disabled</option>';
+        panelSelect.innerHTML = '<option value="">Select channel...</option>';
+
+        serverData.textChannels.forEach(ch => {
+          const opt1 = document.createElement('option');
+          opt1.value = ch.id;
+          opt1.textContent = '#' + ch.name;
+          logSelect.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = ch.id;
+          opt2.textContent = '#' + ch.name;
+          panelSelect.appendChild(opt2);
+        });
+
+        // Populate Roles Selector
+        const roleSelect = document.getElementById('role-selector');
+        roleSelect.innerHTML = '<option value="">+ Add a Support Role...</option>';
+        serverData.roles.forEach(r => {
+          if (r.name !== '@everyone') {
+            const opt = document.createElement('option');
+            opt.value = r.id;
+            opt.textContent = r.name;
+            roleSelect.appendChild(opt);
+          }
+        });
+
+        // Set Current Config
+        if (serverData.config) {
+          const cfg = serverData.config;
+          if (cfg.categoryId) catSelect.value = cfg.categoryId;
+          if (cfg.loggingChannelId) logSelect.value = cfg.loggingChannelId;
+          if (cfg.panelChannelId) panelSelect.value = cfg.panelChannelId;
+          if (cfg.panelTitle) document.getElementById('panelTitleInput').value = cfg.panelTitle;
+          if (cfg.panelDescription) document.getElementById('panelDescInput').value = cfg.panelDescription;
+          if (cfg.buttonText) document.getElementById('buttonTextInput').value = cfg.buttonText;
+          if (cfg.panelColor) document.getElementById('panelColorInput').value = cfg.panelColor;
+          if (cfg.ticketMessage) document.getElementById('ticketMessageInput').value = cfg.ticketMessage;
+
+          selectedRoles = cfg.supportRoles || [];
+          renderRolePills();
+        }
+      } catch (err) {
+        console.error('Error loading data:', err);
+      }
+    }
+
+    function renderRolePills() {
+      const container = document.getElementById('roles-pills-box');
+      container.innerHTML = '';
+
+      if (!selectedRoles || selectedRoles.length === 0) {
+        container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">No support roles added yet. Add one below!</span>';
+        return;
+      }
+
+      selectedRoles.forEach(roleId => {
+        const roleObj = serverData.roles.find(r => r.id === roleId);
+        const name = roleObj ? roleObj.name : roleId;
+
+        const pill = document.createElement('div');
+        pill.className = 'role-pill';
+        pill.innerHTML = `<span>${name}</span> <span class="pill-close" onclick="removeRole('${roleId}')">×</span>`;
+        container.appendChild(pill);
+      });
+    }
+
+    function addSelectedRole(roleId) {
+      if (!roleId) return;
+      if (!selectedRoles.includes(roleId)) {
+        selectedRoles.push(roleId);
+        renderRolePills();
+      }
+      document.getElementById('role-selector').value = '';
+    }
+
+    function removeRole(roleId) {
+      selectedRoles = selectedRoles.filter(id => id !== roleId);
+      renderRolePills();
+    }
+
+    async function saveConfiguration() {
+      const payload = {
+        categoryId: document.getElementById('category-selector').value,
+        supportRoles: selectedRoles,
+        loggingChannelId: document.getElementById('loggingChannelSelect').value,
+        panelChannelId: document.getElementById('panelChannelSelect').value,
+        panelTitle: document.getElementById('panelTitleInput').value,
+        panelDescription: document.getElementById('panelDescInput').value,
+        buttonText: document.getElementById('buttonTextInput').value,
+        panelColor: document.getElementById('panelColorInput').value,
+        ticketMessage: document.getElementById('ticketMessageInput').value
+      };
+
+      try {
+        const res = await fetch('/api/save-ticket-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          showToast('✅ Configuration saved successfully!');
+        } else {
+          alert('Error saving configuration.');
+        }
+      } catch (e) {
+        alert('Network error while saving.');
+      }
+    }
+
+    async function deployPanel() {
+      await saveConfiguration();
+      const channelId = document.getElementById('panelChannelSelect').value;
+      if (!channelId) {
+        alert('Please select a target channel to post the ticket panel.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/deploy-ticket-panel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ channelId })
+        });
+        const json = await res.json();
+        if (json.success) {
+          showToast('🚀 Ticket Panel successfully sent to Discord!');
+        } else {
+          alert('Failed to deploy panel: ' + json.error);
+        }
+      } catch (e) {
+        alert('Deployment failed: ' + e.message);
+      }
+    }
+
+    window.onload = loadDashboardData;
+  </script>
+</body>
+</html>
