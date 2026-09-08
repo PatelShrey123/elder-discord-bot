@@ -23,8 +23,11 @@ export async function execute(message) {
   if (message.guild) {
     const content = message.content.trim();
 
-    // A. Handle .modmail command
-    if (content.toLowerCase() === '.modmail' || content.toLowerCase().startsWith('.modmail ')) {
+    const lower = content.toLowerCase();
+    const isModmailPrefix = lower === '.modmail' || lower === '.modmaill' || lower.startsWith('.modmail ') || lower.startsWith('.modmaill ');
+    const isBotMention = message.mentions.has(client.user.id) && (lower.includes('modmail') || content.trim() === `<@${client.user.id}>` || content.trim() === `<@!${client.user.id}>`);
+
+    if (isModmailPrefix || isBotMention) {
       try {
         const userPromptEmbed = new EmbedBuilder()
           .setColor(0x5865f2)
