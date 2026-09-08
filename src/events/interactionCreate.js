@@ -40,22 +40,29 @@ export async function execute(interaction) {
 
     // A. Confirm Send Modmail
     if (customId === 'btn_confirm_modmail') {
-      const pending = pendingDMs.get(user.id);
+      // Immediately acknowledge button to prevent Discord 3-second timeout!
+      await interaction.deferUpdate().catch(() => {});
 
-      if (!pending) {
-        return interaction.update({
-          content: 'ℹ️ This modmail request has expired or was already sent.',
-          embeds: [],
-          components: []
-        });
+      let content = '';
+      let attachments = [];
+
+      const pending = pendingDMs.get(user.id);
+      if (pending) {
+        content = pending.content;
+        attachments = pending.attachments || [];
+      } else {
+        // Fallback: extract directly from the confirmation embed
+        const desc = interaction.message?.embeds[0]?.description || '';
+        const match = desc.match(/> "([\s\S]*?)"/);
+        content = match ? match[1] : (desc.includes('*(Attachment/File)*') ? '' : desc);
       }
 
       try {
         await deliverModmailToStaff(
           interaction.client,
           user,
-          pending.content,
-          pending.attachments
+          content,
+          attachments
         );
 
         pendingDMs.delete(user.id);
@@ -67,13 +74,13 @@ export async function execute(interaction) {
           .setFooter({ text: 'Elder Clan Modmail Support' })
           .setTimestamp();
 
-        return interaction.update({
+        return interaction.editReply({
           embeds: [successEmbed],
           components: []
         });
       } catch (err) {
         console.error('[CONFIRM MODMAIL ERROR]', err);
-        return interaction.update({
+        return interaction.editReply({
           content: `❌ Error delivering modmail: ${err.message}`,
           components: []
         });
@@ -82,8 +89,9 @@ export async function execute(interaction) {
 
     // B. Cancel Modmail
     if (customId === 'btn_cancel_modmail') {
+      await interaction.deferUpdate().catch(() => {});
       pendingDMs.delete(user.id);
-      return interaction.update({
+      return interaction.editReply({
         content: '❌ **Modmail cancelled.** Nothing was sent to staff.',
         embeds: [],
         components: []

@@ -1,29 +1,43 @@
 import { EmbedBuilder } from 'discord.js';
 import { db } from '../database/db.js';
 
+const DEFAULT_MODMAIL_CHANNEL_ID = '1546892737075216395';
+
 export async function deliverModmailToStaff(client, user, content, attachments = []) {
-  // 1. Locate the configured staff Modmail channel
+  // 1. Locate the staff Modmail channel
   let targetChannel = null;
-  const configuredId = process.env.MODMAIL_CHANNEL_ID;
+  const configuredId = process.env.MODMAIL_CHANNEL_ID || DEFAULT_MODMAIL_CHANNEL_ID;
 
   if (configuredId) {
     try {
       targetChannel = await client.channels.fetch(configuredId);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[MODMAIL SERVICE] Could not fetch channel from configuredId:', configuredId);
+    }
   }
 
   if (!targetChannel) {
     for (const [, guild] of client.guilds.cache) {
       const chId = await db.getModmailChannel(guild.id);
-      if (chId && guild.channels.cache.has(chId)) {
-        targetChannel = guild.channels.cache.get(chId);
-        break;
+      if (chId) {
+        try {
+          targetChannel = await client.channels.fetch(chId);
+          if (targetChannel) break;
+        } catch (e) {}
       }
     }
   }
 
   if (!targetChannel) {
-    throw new Error('No staff Modmail channel has been configured yet. Staff must run /modmail-setup <channel>.');
+    try {
+      targetChannel = await client.channels.fetch(DEFAULT_MODMAIL_CHANNEL_ID);
+    } catch (e) {
+      console.error('[MODMAIL SERVICE] Could not fetch default modmail channel:', DEFAULT_MODMAIL_CHANNEL_ID);
+    }
+  }
+
+  if (!targetChannel) {
+    throw new Error('Staff Modmail channel not found. Please verify bot is in the server with channel #1546892737075216395.');
   }
 
   // 2. Check for an existing open thread for this user
@@ -47,7 +61,7 @@ export async function deliverModmailToStaff(client, user, content, attachments =
   if (!thread) {
     isNewThread = true;
     const cleanUsername = user.username.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15) || 'member';
-    const threadName = `🧵-ticket-${cleanUsername}`;
+    const threadName = `ticket-${cleanUsername}`;
 
     thread = await targetChannel.threads.create({
       name: threadName,
