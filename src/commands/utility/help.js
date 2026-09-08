@@ -19,8 +19,8 @@ export async function execute(interaction) {
         value: '• `/blacklist check <user_or_id>` — Check if a player or applicant is blacklisted\n• `/blacklist add <user_or_id> <reason> [proof]` — Staff: Blacklist an offender\n• `/blacklist remove <user_or_id>` — Staff: Remove from blacklist\n• `/blacklist list` — Staff: View all blacklisted players'
       },
       {
-        name: '🎟️ Support Tickets & Modmail',
-        value: '• `/ticket-setup <channel>` — Deploy interactive "Open Ticket" panel\n• `/modmail reply <user> <message>` — Reply to a member\'s private DM\n• `/modmail close <user>` — Close an active modmail ticket'
+        name: '📬 Modmail System',
+        value: '• `/modmail reply <user> <message>` — Reply to a member\'s private DM\n• `/modmail close <user>` — Close an active modmail ticket'
       },
       {
         name: '📊 Google Sheets & Roster',

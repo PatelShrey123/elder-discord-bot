@@ -7,13 +7,7 @@ import {
   Client,
   Collection,
   GatewayIntentBits,
-  Partials,
-  ChannelType,
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  PermissionFlagsBits
+  Partials
 } from 'discord.js';
 import { db } from './database/db.js';
 
@@ -23,40 +17,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ---------------------------------------------------------
-// 1. Express Web Server & Ticket Tool Dashboard
+// 1. Lightweight Express Server for Render Free Tier Keep-Alive
 // ---------------------------------------------------------
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    bot: 'Elder Discord Bot',
+    message: 'Elder Discord Bot is running 24/7 on Render!',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
 
-// In-memory audit history matching Ticket Tool Screenshot 4
-const dashboardHistory = [
-  {
-    time: new Date(Date.now() - 1000 * 60 * 5).toUTCString(),
-    userId: '694778546899648552',
-    username: 'yupisss_____#0',
-    panel: 'Elder 1v1 Application',
-    action: 'Panel sent to channel'
-  },
-  {
-    time: new Date(Date.now() - 1000 * 60 * 45).toUTCString(),
-    userId: '1135930563396649001',
-    username: 'entixx_#0',
-    panel: 'General',
-    action: 'Made 2 changes (Support Team Roles)'
-  },
-  {
-    time: new Date(Date.now() - 1000 * 60 * 120).toUTCString(),
-    userId: '694778546899648552',
-    username: 'yupisss_____#0',
-    panel: 'General',
-    action: 'Made 8 changes (General Settings)'
-  }
-];
-
-// Keep-alive health checks for Render
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -66,193 +41,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Serve Ticket Tool Web Dashboard
-app.get('/ticketsetup', (req, res) => {
-  const dashboardPath = path.join(__dirname, 'web', 'dashboard.html');
-  res.sendFile(dashboardPath);
-});
-
-app.get('/dashboard', (req, res) => {
-  res.redirect('/ticketsetup');
-});
-
-app.get('/', (req, res) => {
-  res.redirect('/ticketsetup');
-});
-
-// Helper to get active Guild
-function getActiveGuild() {
-  if (!client || !client.isReady()) return null;
-  if (process.env.GUILD_ID && client.guilds.cache.has(process.env.GUILD_ID)) {
-    return client.guilds.cache.get(process.env.GUILD_ID);
-  }
-  return client.guilds.cache.first() || null;
-}
-
-// API: Get Live Guild Channels, Categories, Roles, and Config
-app.get('/api/guild-data', async (req, res) => {
-  try {
-    const guild = getActiveGuild();
-    if (!guild) {
-      return res.json({
-        guild: { name: 'Elder Clan', memberCount: 679, icon: null },
-        categories: [
-          { id: 'cat-1', name: '[ 📥 | APPLICATION-CENTER | 📥 ]' }
-        ],
-        textChannels: [
-          { id: 'ch-1', name: 'tickets' },
-          { id: 'ch-2', name: 'ticket-logs' }
-        ],
-        roles: [
-          { id: 'r-1', name: '[ 👑 ] ELDER LEADER', position: 100 },
-          { id: 'r-2', name: '[ 🏛️ ] ELDER FOUNDER', position: 99 },
-          { id: 'r-3', name: '[ 👮 ] ELDER OFFICER', position: 98 },
-          { id: 'r-4', name: '[ 💡 ] ELDER ADMIN', position: 97 },
-          { id: 'r-5', name: '[ 🎖️ ] ELDER CO LEADER', position: 96 },
-          { id: 'r-6', name: '[ 🛡️ ] ELDER STAFF', position: 95 }
-        ],
-        config: await db.getTicketConfig('default')
-      });
-    }
-
-    const categories = [];
-    const textChannels = [];
-
-    guild.channels.cache.forEach(ch => {
-      if (ch.type === ChannelType.GuildCategory) {
-        categories.push({ id: ch.id, name: ch.name });
-      } else if (ch.type === ChannelType.GuildText) {
-        textChannels.push({ id: ch.id, name: ch.name });
-      }
-    });
-
-    // Sort ALL roles strictly by hierarchy (highest position first)
-    const roles = [];
-    Array.from(guild.roles.cache.values())
-      .sort((a, b) => b.position - a.position)
-      .forEach(r => {
-        if (r.name !== '@everyone') {
-          roles.push({
-            id: r.id,
-            name: r.name,
-            color: r.hexColor,
-            position: r.position
-          });
-        }
-      });
-
-    const config = await db.getTicketConfig(guild.id);
-
-    res.json({
-      guild: {
-        id: guild.id,
-        name: guild.name,
-        memberCount: guild.memberCount,
-        icon: guild.iconURL({ dynamic: true })
-      },
-      categories,
-      textChannels,
-      roles,
-      config
-    });
-  } catch (err) {
-    console.error('[API GUILD DATA ERROR]', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// API: Dashboard History
-app.get('/api/dashboard-history', (req, res) => {
-  res.json({ history: dashboardHistory });
-});
-
-// API: Save Ticket Configuration
-app.post('/api/save-ticket-config', async (req, res) => {
-  try {
-    const guild = getActiveGuild();
-    const guildId = guild ? guild.id : 'default';
-
-    const updated = await db.setTicketConfig(guildId, req.body);
-
-    dashboardHistory.unshift({
-      time: new Date().toUTCString(),
-      userId: '694778546899648552',
-      username: 'Elder Staff',
-      panel: 'General',
-      action: 'Updated Support Roles & Panel Settings'
-    });
-
-    res.json({ success: true, config: updated });
-  } catch (err) {
-    console.error('[API SAVE CONFIG ERROR]', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// API: Deploy Ticket Panel into Selected Channel
-app.post('/api/deploy-ticket-panel', async (req, res) => {
-  try {
-    const { channelId } = req.body;
-    if (!channelId) return res.status(400).json({ error: 'channelId is required' });
-
-    const guild = getActiveGuild();
-    if (!guild) return res.status(500).json({ error: 'Bot is not yet connected to any Discord guild.' });
-
-    const targetChannel = guild.channels.cache.get(channelId);
-    if (!targetChannel) return res.status(404).json({ error: 'Selected channel not found in server.' });
-
-    const config = await db.getTicketConfig(guild.id);
-
-    const embed = new EmbedBuilder()
-      .setColor(config.panelColor ? parseInt(config.panelColor.replace('#', ''), 16) : 0x5865f2)
-      .setTitle(config.panelTitle || '📩 Elder Clan Applications & Support')
-      .setDescription(config.panelDescription || 'Click the button below to open a private ticket with our staff!')
-      .setThumbnail(guild.iconURL({ dynamic: true }))
-      .setFooter({ text: 'Elder Clan Ticket Tool • 24/7 Automated' });
-
-    const button = new ButtonBuilder()
-      .setCustomId('btn_create_ticket')
-      .setLabel(config.buttonText || 'Open Ticket')
-      .setEmoji(config.buttonEmoji || '📩')
-      .setStyle(ButtonStyle.Primary);
-
-    const row = new ActionRowBuilder().addComponents(button);
-
-    await targetChannel.send({ embeds: [embed], components: [row] });
-    await db.setTicketConfig(guild.id, { panelChannelId: channelId });
-
-    dashboardHistory.unshift({
-      time: new Date().toUTCString(),
-      userId: '694778546899648552',
-      username: 'Elder Staff',
-      panel: config.panelTitle || 'Elder Application',
-      action: `Panel sent to channel #${targetChannel.name} (${channelId})`
-    });
-
-    res.json({ success: true, channel: targetChannel.name });
-  } catch (err) {
-    console.error('[API DEPLOY PANEL ERROR]', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Discord OAuth2 Login Redirect
-app.get('/auth/discord', (req, res) => {
-  const clientId = process.env.CLIENT_ID;
-  const host = req.get('host');
-  const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
-  const redirectUri = encodeURIComponent(`${protocol}://${host}/auth/discord/callback`);
-  const authorizeUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=identify%20guilds%20guilds.members.read`;
-  res.redirect(authorizeUrl);
-});
-
-// Discord OAuth2 Callback
-app.get('/auth/discord/callback', async (req, res) => {
-  res.redirect('/ticketsetup?auth=success');
-});
-
 const server = app.listen(PORT, () => {
-  console.log(`[RENDER WEB SERVICE] Ticket Tool & Dashboard listening on port ${PORT}`);
+  console.log(`[RENDER WEB SERVICE] HTTP keep-alive server listening on port ${PORT}`);
 });
 
 // ---------------------------------------------------------
@@ -285,7 +75,7 @@ function createClient(usePrivileged = true) {
 }
 
 // ---------------------------------------------------------
-// 3. Load Commands & Events
+// 3. Load Commands & Events Dynamically
 // ---------------------------------------------------------
 function loadCommandsAndEvents(targetClient) {
   // Commands
@@ -301,6 +91,7 @@ function loadCommandsAndEvents(targetClient) {
           import(`file://${filePath}`).then(command => {
             if ('data' in command && 'execute' in command) {
               targetClient.commands.set(command.data.name, command);
+              console.log(`[LOADED COMMAND] /${command.data.name} (${folder})`);
             }
           }).catch(err => {
             console.error(`[COMMAND LOAD ERROR] ${filePath}:`, err.message);
@@ -322,6 +113,7 @@ function loadCommandsAndEvents(targetClient) {
         } else {
           targetClient.on(event.name, (...args) => event.execute(...args));
         }
+        console.log(`[LOADED EVENT] ${event.name}`);
       }).catch(err => {
         console.error(`[EVENT LOAD ERROR] ${filePath}:`, err.message);
       });

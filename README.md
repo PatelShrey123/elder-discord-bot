@@ -21,11 +21,6 @@ A complete clan and server management Discord bot built with **Discord.js v14**,
 - `/blacklist list` — View all blacklisted records.
 - **Auto-Join Scanner**: Automatically alerts staff if a blacklisted ID joins the server!
 
-### 🎟️ Interactive Ticket System
-- `/ticket-setup <channel>` — Deploys a support & clan application panel with an **"📩 Open Ticket"** button.
-- Creates private ticket channels (`#ticket-<user>-<id>`) visible only to the user and staff.
-- Includes a **"🔒 Close Ticket"** button with a 5-second countdown and automatic cleanup.
-
 ### 📬 Modmail System
 - Members can **Direct Message (DM)** the bot for private support.
 - Inbound DMs and attachments are instantly forwarded to your configured staff modmail channel.
@@ -44,70 +39,51 @@ A complete clan and server management Discord bot built with **Discord.js v14**,
 
 ---
 
-## 🗄️ Supabase Cloud Database Setup (1-Click)
+## 🗄️ Supabase Cloud Database Setup
 
-1. Go to [database.new](https://database.new) or [supabase.com](https://supabase.com) and create a free project.
+1. Go to [supabase.com/dashboard](https://supabase.com/dashboard).
 2. Open the **SQL Editor** on the left menu.
-3. Paste the contents of [`src/database/supabase_schema.sql`](src/database/supabase_schema.sql) and click **RUN**.
-4. Go to **Project Settings** > **API**:
-   - Copy **Project URL** (put in `SUPABASE_URL`).
-   - Copy **anon / publishable key** or **service_role key** (put in `SUPABASE_KEY`).
+3. Paste the following and click **RUN**:
+```sql
+CREATE TABLE IF NOT EXISTS elder_points (
+  user_id TEXT PRIMARY KEY,
+  username TEXT,
+  points BIGINT DEFAULT 0,
+  last_daily TIMESTAMPTZ
+);
 
-*(Note: The bot also includes a local JSON database fallback in `data/elder_data.json` if Supabase is not provided during local testing!)*
+CREATE TABLE IF NOT EXISTS blacklist (
+  target_id TEXT PRIMARY KEY,
+  target_tag TEXT,
+  reason TEXT,
+  proof TEXT,
+  added_by TEXT,
+  added_at TIMESTAMPTZ DEFAULT NOW()
+);
 
----
+CREATE TABLE IF NOT EXISTS modmail (
+  user_id TEXT PRIMARY KEY,
+  thread_id TEXT,
+  status TEXT DEFAULT 'open',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
-## 🔑 Environment Variables
-
-Copy `.env.example` to `.env` and fill in:
-
-| Variable | Description |
-| :--- | :--- |
-| `DISCORD_TOKEN` | Discord Bot Token from Developer Portal |
-| `CLIENT_ID` | Application Client ID from Developer Portal |
-| `GUILD_ID` | (Optional) Server ID for instant command updates |
-| `SUPABASE_URL` | Your Supabase Project URL |
-| `SUPABASE_KEY` | Your Supabase API Key |
-| `MODMAIL_CHANNEL_ID` | Staff channel ID for receiving Modmail DMs |
-| `STAFF_ROLE_ID` | Moderator/Staff Role ID for ticket access |
-| `GOOGLE_SHEET_URL` | Link to your Google Sheet roster |
-| `GOOGLE_SHEET_CSV_URL` | Published CSV link (**File > Share > Publish to web > CSV**) |
-| `PORT` | 3000 (Render uses 10000 automatically) |
+ALTER TABLE elder_points DISABLE ROW LEVEL SECURITY;
+ALTER TABLE blacklist DISABLE ROW LEVEL SECURITY;
+ALTER TABLE modmail DISABLE ROW LEVEL SECURITY;
+```
+4. Copy your **Project URL** (`SUPABASE_URL`) and **anon key** (`SUPABASE_KEY`) into your environment variables.
 
 ---
 
 ## 🚀 Deploying 24/7 on Render (Free Tier)
 
-### 1. Push code to GitHub
-```bash
-git add .
-git commit -m "Add full Elder clan bot features: points, blacklist, tickets, modmail"
-git push origin main
-```
-
-### 2. Create Web Service on Render
-1. Go to [dashboard.render.com](https://dashboard.render.com) > **New +** > **Web Service**.
-2. Connect your GitHub repository `PatelShrey123/elder-discord-bot`.
-3. Configure:
-   - **Runtime**: `Node`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-   - **Plan**: **Free**
-4. Under **Environment Variables**, add:
+1. Connect your repository `PatelShrey123/elder-discord-bot` on [dashboard.render.com](https://dashboard.render.com).
+2. Create as a **Free Web Service**.
+3. Set environment variables:
    - `DISCORD_TOKEN`
    - `CLIENT_ID`
    - `SUPABASE_URL`
    - `SUPABASE_KEY`
-   - `MODMAIL_CHANNEL_ID` *(optional)*
-   - `STAFF_ROLE_ID` *(optional)*
    - `PORT` = `10000`
-5. Click **Create Web Service**.
-
-### 3. Keep Alive 24/7 (Prevent Render Sleep)
-1. Copy your Render URL (e.g., `https://elder-discord-bot.onrender.com`).
-2. Go to [UptimeRobot.com](https://uptimerobot.com) (free account).
-3. Add a monitor for:
-   - **Type**: `HTTP(s)`
-   - **URL**: `https://elder-discord-bot.onrender.com/health`
-   - **Interval**: 5 minutes.
-4. Your bot will remain online 24/7 for free!
+4. Use [UptimeRobot.com](https://uptimerobot.com) to ping `https://your-bot.onrender.com/health` every 5 minutes to keep it online 24/7!
