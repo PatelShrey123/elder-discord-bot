@@ -53,6 +53,8 @@ function createClient(usePrivileged = true) {
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.DirectMessageReactions,
+    GatewayIntentBits.GuildMessageReactions,
   ];
 
   if (usePrivileged) {
@@ -65,7 +67,8 @@ function createClient(usePrivileged = true) {
     partials: [
       Partials.Channel,
       Partials.Message,
-      Partials.User
+      Partials.User,
+      Partials.Reaction
     ]
   });
 

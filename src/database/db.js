@@ -598,6 +598,23 @@ class DatabaseService {
       }
     }
   }
+
+  // ==========================================
+  // MODMAIL CHANNEL CONFIGURATION
+  // ==========================================
+  async getModmailChannel(guildId) {
+    if (this.localData.config && this.localData.config[`modmail_channel_${guildId}`]) {
+      return this.localData.config[`modmail_channel_${guildId}`];
+    }
+    return process.env.MODMAIL_CHANNEL_ID || null;
+  }
+
+  async setModmailChannel(guildId, channelId) {
+    if (!this.localData.config) this.localData.config = {};
+    this.localData.config[`modmail_channel_${guildId}`] = channelId;
+    this.saveLocalData();
+    return channelId;
+  }
 }
 
 export const db = new DatabaseService();
