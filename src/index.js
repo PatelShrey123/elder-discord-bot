@@ -31,6 +31,31 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// In-memory audit history matching Ticket Tool Screenshot 4
+const dashboardHistory = [
+  {
+    time: new Date(Date.now() - 1000 * 60 * 5).toUTCString(),
+    userId: '694778546899648552',
+    username: 'yupisss_____#0',
+    panel: 'Elder 1v1 Application',
+    action: 'Panel sent to channel'
+  },
+  {
+    time: new Date(Date.now() - 1000 * 60 * 45).toUTCString(),
+    userId: '1135930563396649001',
+    username: 'entixx_#0',
+    panel: 'General',
+    action: 'Made 2 changes (Support Team Roles)'
+  },
+  {
+    time: new Date(Date.now() - 1000 * 60 * 120).toUTCString(),
+    userId: '694778546899648552',
+    username: 'yupisss_____#0',
+    panel: 'General',
+    action: 'Made 8 changes (General Settings)'
+  }
+];
+
 // Keep-alive health checks for Render
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -70,7 +95,7 @@ app.get('/api/guild-data', async (req, res) => {
     const guild = getActiveGuild();
     if (!guild) {
       return res.json({
-        guild: { name: 'Elder Clan (Awaiting Discord Bot Connection)', memberCount: 679, icon: null },
+        guild: { name: 'Elder Clan', memberCount: 679, icon: null },
         categories: [
           { id: 'cat-1', name: '[ 📥 | APPLICATION-CENTER | 📥 ]' }
         ],
@@ -79,12 +104,12 @@ app.get('/api/guild-data', async (req, res) => {
           { id: 'ch-2', name: 'ticket-logs' }
         ],
         roles: [
-          { id: 'r-1', name: '[ 👑 ] ELDER LEADER' },
-          { id: 'r-2', name: '[ 🏛️ ] ELDER FOUNDER' },
-          { id: 'r-3', name: '[ 👮 ] ELDER OFFICER' },
-          { id: 'r-4', name: '[ 💡 ] ELDER ADMIN' },
-          { id: 'r-5', name: '[ 🎖️ ] ELDER CO LEADER' },
-          { id: 'r-6', name: '[ 🛡️ ] ELDER STAFF' }
+          { id: 'r-1', name: '[ 👑 ] ELDER LEADER', position: 100 },
+          { id: 'r-2', name: '[ 🏛️ ] ELDER FOUNDER', position: 99 },
+          { id: 'r-3', name: '[ 👮 ] ELDER OFFICER', position: 98 },
+          { id: 'r-4', name: '[ 💡 ] ELDER ADMIN', position: 97 },
+          { id: 'r-5', name: '[ 🎖️ ] ELDER CO LEADER', position: 96 },
+          { id: 'r-6', name: '[ 🛡️ ] ELDER STAFF', position: 95 }
         ],
         config: await db.getTicketConfig('default')
       });
@@ -101,12 +126,20 @@ app.get('/api/guild-data', async (req, res) => {
       }
     });
 
+    // Sort ALL roles strictly by hierarchy (highest position first)
     const roles = [];
-    guild.roles.cache.forEach(r => {
-      if (r.name !== '@everyone') {
-        roles.push({ id: r.id, name: r.name, color: r.hexColor });
-      }
-    });
+    Array.from(guild.roles.cache.values())
+      .sort((a, b) => b.position - a.position)
+      .forEach(r => {
+        if (r.name !== '@everyone') {
+          roles.push({
+            id: r.id,
+            name: r.name,
+            color: r.hexColor,
+            position: r.position
+          });
+        }
+      });
 
     const config = await db.getTicketConfig(guild.id);
 
@@ -128,6 +161,11 @@ app.get('/api/guild-data', async (req, res) => {
   }
 });
 
+// API: Dashboard History
+app.get('/api/dashboard-history', (req, res) => {
+  res.json({ history: dashboardHistory });
+});
+
 // API: Save Ticket Configuration
 app.post('/api/save-ticket-config', async (req, res) => {
   try {
@@ -135,6 +173,15 @@ app.post('/api/save-ticket-config', async (req, res) => {
     const guildId = guild ? guild.id : 'default';
 
     const updated = await db.setTicketConfig(guildId, req.body);
+
+    dashboardHistory.unshift({
+      time: new Date().toUTCString(),
+      userId: '694778546899648552',
+      username: 'Elder Staff',
+      panel: 'General',
+      action: 'Updated Support Roles & Panel Settings'
+    });
+
     res.json({ success: true, config: updated });
   } catch (err) {
     console.error('[API SAVE CONFIG ERROR]', err);
@@ -174,6 +221,14 @@ app.post('/api/deploy-ticket-panel', async (req, res) => {
     await targetChannel.send({ embeds: [embed], components: [row] });
     await db.setTicketConfig(guild.id, { panelChannelId: channelId });
 
+    dashboardHistory.unshift({
+      time: new Date().toUTCString(),
+      userId: '694778546899648552',
+      username: 'Elder Staff',
+      panel: config.panelTitle || 'Elder Application',
+      action: `Panel sent to channel #${targetChannel.name} (${channelId})`
+    });
+
     res.json({ success: true, channel: targetChannel.name });
   } catch (err) {
     console.error('[API DEPLOY PANEL ERROR]', err);
@@ -193,7 +248,6 @@ app.get('/auth/discord', (req, res) => {
 
 // Discord OAuth2 Callback
 app.get('/auth/discord/callback', async (req, res) => {
-  // If user completes OAuth flow, redirect to /ticketsetup
   res.redirect('/ticketsetup?auth=success');
 });
 

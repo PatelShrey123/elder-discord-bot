@@ -9,21 +9,22 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-main: #131722;
-      --bg-sidebar: #0f121a;
-      --bg-card: #1c2130;
-      --bg-card-hover: #22283a;
-      --bg-input: #151926;
-      --border-color: #272d42;
-      --text-main: #f1f5f9;
+      --bg-main: #141721;
+      --bg-sidebar: #0e1118;
+      --bg-card: #1c2230;
+      --bg-card-hover: #22293a;
+      --bg-input: #151a26;
+      --border-color: #272f44;
+      --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --primary: #3b82f6;
-      --primary-hover: #2563eb;
       --green: #10b981;
       --green-hover: #059669;
       --danger: #ef4444;
       --gold: #f59e0b;
       --pill-bg: #2d3748;
+      --switch-active: #10b981;
+      --switch-inactive: #ef4444;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -49,7 +50,7 @@
     .nav-left {
       display: flex;
       align-items: center;
-      gap: 24px;
+      gap: 28px;
     }
     .logo {
       display: flex;
@@ -72,13 +73,13 @@
     }
     .nav-links {
       display: flex;
-      gap: 20px;
+      gap: 24px;
       list-style: none;
     }
     .nav-links a {
       color: var(--text-muted);
       text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       font-weight: 500;
       transition: color 0.2s;
     }
@@ -99,6 +100,7 @@
       border: 1px solid var(--border-color);
       font-size: 0.88rem;
       font-weight: 600;
+      cursor: pointer;
     }
     .user-avatar {
       width: 28px;
@@ -109,6 +111,7 @@
       align-items: center;
       justify-content: center;
       font-size: 0.75rem;
+      font-weight: 700;
     }
 
     /* Main Container */
@@ -125,7 +128,7 @@
       padding: 20px 14px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 18px;
     }
     .guild-badge {
       display: flex;
@@ -153,10 +156,35 @@
     .guild-info h4 { font-size: 0.95rem; font-weight: 700; }
     .guild-info span { font-size: 0.78rem; color: var(--text-muted); }
 
+    .plan-switch {
+      display: flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .plan-btn {
+      flex: 1;
+      padding: 6px 0;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .plan-btn.active {
+      background: var(--gold);
+      color: #000;
+    }
+    .plan-btn.free {
+      color: var(--text-muted);
+    }
+
     .side-nav {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
     }
     .side-item {
       display: flex;
@@ -169,7 +197,6 @@
       font-weight: 500;
       cursor: pointer;
       transition: all 0.2s;
-      text-decoration: none;
     }
     .side-item:hover, .side-item.active {
       background: rgba(59, 130, 246, 0.15);
@@ -182,147 +209,249 @@
     /* Content Area */
     .content-area {
       flex: 1;
-      padding: 30px 40px;
+      padding: 24px 34px;
       overflow-y: auto;
-      max-width: 1200px;
     }
 
-    .section-title {
-      font-size: 1.3rem;
-      font-weight: 700;
-      margin-bottom: 20px;
+    /* VIEW CONTAINERS */
+    .view-container { display: none; }
+    .view-container.active { display: block; }
+
+    /* Top Breadcrumb Header for Menu > General (Screenshot 2) */
+    .subpage-header {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .btn-back {
+      background: var(--green);
+      color: #fff;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .btn-back:hover { background: var(--green-hover); }
+    .breadcrumb-text {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      font-weight: 600;
     }
 
-    /* Cards Grid */
-    .grid-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-bottom: 30px;
+    /* Grid Sections matching Screenshot 3 */
+    .section-block {
+      margin-bottom: 28px;
     }
-    .feature-card {
+    .section-block h4 {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 14px;
+    }
+    .card-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .ticket-nav-card {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 18px 20px;
+      border-radius: 10px;
+      padding: 16px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       cursor: pointer;
       transition: all 0.2s;
     }
-    .feature-card:hover {
+    .ticket-nav-card:hover {
       background: var(--bg-card-hover);
       border-color: #3b82f6;
+      transform: translateY(-1px);
     }
-    .feature-card h5 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
-    .feature-card p { font-size: 0.78rem; color: var(--text-muted); }
-    .feature-arrow { color: var(--text-muted); font-size: 1.2rem; }
-
-    /* Main Config Box */
-    .config-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 24px;
-      margin-bottom: 30px;
-    }
-    .config-box-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-color);
-    }
-    .config-box-header h4 {
-      font-size: 1.1rem;
-      font-weight: 700;
+    .ticket-nav-card h5 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+    }
+    .ticket-nav-card p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .card-arrow {
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      font-weight: 600;
     }
 
-    .form-row {
+    /* General Settings Boxes (Screenshot 2) */
+    .general-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-bottom: 24px;
+      gap: 20px;
+      margin-bottom: 20px;
     }
-    @media (max-width: 900px) {
-      .form-row { grid-template-columns: 1fr; }
+    @media (max-width: 960px) {
+      .general-grid { grid-template-columns: 1fr; }
       .sidebar { display: none; }
     }
 
-    .form-group {
+    .config-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 18px 20px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 12px;
     }
-    .form-group label {
-      font-size: 0.88rem;
+    .config-card.inline-flex {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title {
+      font-size: 0.9rem;
       font-weight: 600;
       color: #cbd5e1;
       display: flex;
       align-items: center;
       gap: 6px;
     }
-    .help-icon {
-      color: var(--text-muted);
-      cursor: help;
-      font-size: 0.8rem;
-    }
 
-    .form-control, select, input, textarea {
-      width: 100%;
+    /* Pill container for roles matching Screenshot 2 */
+    .roles-box {
       background: var(--bg-input);
       border: 1px solid var(--border-color);
       border-radius: 8px;
-      padding: 10px 14px;
-      color: #fff;
-      font-family: inherit;
-      font-size: 0.9rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    .form-control:focus, select:focus, input:focus, textarea:focus {
-      border-color: var(--primary);
-    }
-
-    /* Pills Container for Roles */
-    .pills-container {
-      background: var(--bg-input);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 8px;
-      min-height: 48px;
+      padding: 10px;
+      min-height: 56px;
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
     }
-    .role-pill {
-      background: rgba(59, 130, 246, 0.2);
-      border: 1px solid rgba(59, 130, 246, 0.4);
-      color: #93c5fd;
+    .role-badge {
+      background: #3b82f6;
+      color: #fff;
       padding: 5px 10px;
-      border-radius: 6px;
+      border-radius: 4px;
       font-size: 0.82rem;
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
-    .pill-close {
+    .role-badge .btn-close-role {
       cursor: pointer;
-      color: #cbd5e1;
       font-weight: 700;
-      font-size: 0.9rem;
+      color: #fff;
     }
-    .pill-close:hover { color: var(--danger); }
+    .role-badge .btn-close-role:hover { color: #fca5a5; }
+
+    /* Toggle Switch */
+    .switch-wrap {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+    .switch-wrap input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--switch-inactive);
+      transition: .3s;
+      border-radius: 26px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px; width: 20px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--switch-active);
+    }
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+
+    /* Stepper for Ticket Padding */
+    .stepper {
+      display: flex;
+      align-items: center;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .stepper-btn {
+      width: 40px;
+      height: 40px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .stepper-value {
+      width: 60px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    /* Table for Dashboard History (Screenshot 4) */
+    .history-table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+    .history-table th {
+      background: var(--bg-sidebar);
+      padding: 14px 16px;
+      font-weight: 600;
+      color: #cbd5e1;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .history-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: #94a3b8;
+    }
+    .history-table tr:hover td {
+      background: var(--bg-card-hover);
+      color: #fff;
+    }
+    .filter-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 0.8rem;
+      margin-top: 6px;
+    }
 
     /* Buttons */
     .btn {
@@ -338,98 +467,47 @@
       gap: 8px;
       transition: all 0.2s;
     }
-    .btn-green {
-      background: var(--green);
-      color: #fff;
-    }
+    .btn-green { background: var(--green); color: #fff; }
     .btn-green:hover { background: var(--green-hover); }
-    .btn-primary {
-      background: var(--primary);
-      color: #fff;
-    }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--border-color);
-      color: #cbd5e1;
-    }
-    .btn-outline:hover { background: var(--bg-card-hover); color: #fff; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: #2563eb; }
 
-    .button-group {
-      display: flex;
-      gap: 14px;
-      margin-top: 10px;
-    }
-
-    /* Modal */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      width: 90%;
-      max-width: 550px;
-      padding: 24px;
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .modal-close {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-size: 1.3rem;
-      cursor: pointer;
-    }
-
-    /* Toast */
-    #toast {
+    .toast {
       position: fixed;
       bottom: 24px;
       right: 24px;
       background: #10b981;
       color: #fff;
-      padding: 12px 20px;
+      padding: 12px 22px;
       border-radius: 8px;
       font-size: 0.9rem;
       font-weight: 600;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
       display: none;
-      z-index: 200;
+      z-index: 999;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
   </style>
 </head>
 <body>
 
-  <!-- Top Navbar -->
+  <!-- Top Navbar (GitHub link removed as requested!) -->
   <header class="navbar">
     <div class="nav-left">
       <div class="logo">
         <div class="logo-icon">🛡️</div>
-        <span>ELDER TICKET TOOL</span>
+        <span>TICKET TOOL</span>
       </div>
       <ul class="nav-links">
-        <li><a href="#panel">Panel Configs</a></li>
+        <li><a href="#" onclick="showView('panel-overview')">Panel Configs</a></li>
         <li><a href="https://discord.com/oauth2/authorize?client_id=1546875727201181847&permissions=8&scope=bot%20applications.commands" target="_blank">Bot Invite</a></li>
-        <li><a href="https://github.com/PatelShrey123/elder-discord-bot" target="_blank">GitHub Repo</a></li>
+        <li><a href="#" onclick="showToast('Elder Clan Support Server')">Support Server</a></li>
+        <li><a href="#" onclick="showToast('Docs active')">Docs</a></li>
       </ul>
     </div>
     <div class="nav-right">
-      <div class="user-profile" id="user-badge">
-        <div class="user-avatar" id="user-avatar-initial">X</div>
-        <span id="user-name-display">Verifying Access...</span>
+      <div class="user-profile">
+        <div class="user-avatar">XP</div>
+        <span>X P E R T</span>
       </div>
     </div>
   </header>
@@ -440,176 +518,399 @@
       <div class="guild-badge">
         <div class="guild-icon" id="guild-avatar">👑</div>
         <div class="guild-info">
-          <h4 id="guild-name">Elder Clan</h4>
+          <h4 id="guild-name">Elder</h4>
           <span id="guild-members">679 members</span>
         </div>
       </div>
 
+      <div class="plan-switch">
+        <div class="plan-btn active">Premium</div>
+        <div class="plan-btn free">Free</div>
+      </div>
+
       <nav class="side-nav">
-        <div class="side-item active">📊 Panel Configs</div>
-        <div class="side-item" onclick="alert('Feature coming in v1.1')">⚙️ Server Info</div>
-        <div class="side-item" onclick="alert('Manage commands directly in Discord!')">🤖 Command Configs</div>
-        <div class="side-item" onclick="alert('Transcripts are active!')">📜 Dashboard History</div>
-        <div class="side-item" onclick="alert('Statistics sync live with Discord!')">📈 Statistics</div>
+        <div class="side-item" onclick="showToast('Server info active')">⚙️ Server Info</div>
+        <div class="side-item" onclick="showToast('Customize bot active')">🎨 Customize Bot</div>
+        <div class="side-item" id="nav-cmd" onclick="showView('command-configs')">🤖 Command Configs</div>
+        <div class="side-item" onclick="showToast('Server configs active')">📁 Server Configs</div>
+        <div class="side-item active" id="nav-panel" onclick="showView('panel-overview')">📊 Panel Configs</div>
+        <div class="side-item" onclick="showToast('Custom commands active')">⚡ Custom Commands</div>
+        <div class="side-item" id="nav-history" onclick="showView('dashboard-history')">📜 Dashboard History</div>
+        <div class="side-item" onclick="showToast('Statistics active')">📈 Statistics</div>
       </nav>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Main Content Area -->
     <main class="content-area">
-      <div class="section-title">
-        <span>⚙️</span>
-        <span>Ticket Tool — Panel Configs</span>
-      </div>
 
-      <!-- Quick Feature Cards -->
-      <div class="grid-cards">
-        <div class="feature-card" onclick="openModal('panelModal')">
-          <div>
-            <h5>Panel Message</h5>
-            <p>Customize embed title, description & color</p>
-          </div>
-          <span class="feature-arrow">›</span>
-        </div>
-        <div class="feature-card" onclick="openModal('ticketModal')">
-          <div>
-            <h5>Ticket Message</h5>
-            <p>Welcome greeting sent inside new tickets</p>
-          </div>
-          <span class="feature-arrow">›</span>
-        </div>
-        <div class="feature-card" onclick="document.getElementById('loggingChannelSelect').focus()">
-          <div>
-            <h5>Logging & Transcripts</h5>
-            <p>Save transcripts when closed</p>
-          </div>
-          <span class="feature-arrow">›</span>
-        </div>
-        <div class="feature-card" onclick="alert('Claiming button is enabled inside all tickets!')">
-          <div>
-            <h5>Claiming System</h5>
-            <p>Allow staff to claim open tickets</p>
-          </div>
-          <span class="feature-arrow">›</span>
-        </div>
-      </div>
-
-      <!-- Frequently Used Configs Box -->
-      <div class="config-box">
-        <div class="config-box-header">
-          <h4>📁 Frequently Used Configs</h4>
-          <span style="font-size: 0.8rem; color: var(--gold);">⚡ Live Synced with Discord</span>
-        </div>
-
-        <div class="form-row">
-          <!-- Support Team Roles -->
-          <div class="form-group">
-            <label>
-              Support Team Roles
-              <span class="help-icon" title="Roles with permission to view and answer tickets">ℹ️</span>
-            </label>
-            <div class="pills-container" id="roles-pills-box">
-              <!-- Dynamically populated pills -->
+      <!-- VIEW 1: Panel Configs Overview (Screenshot 3) -->
+      <div class="view-container active" id="view-panel-overview">
+        <!-- General Ticket Options -->
+        <div class="section-block">
+          <h4>General Ticket Options</h4>
+          <div class="card-grid-3">
+            <div class="ticket-nav-card" onclick="showView('general-settings')">
+              <div>
+                <h5>General</h5>
+                <p>Support team and other general items</p>
+              </div>
+              <span class="card-arrow">›</span>
             </div>
-            <select id="role-selector" onchange="addSelectedRole(this.value)">
-              <option value="">+ Add a Support Role...</option>
+            <div class="ticket-nav-card" onclick="showView('general-settings')">
+              <div>
+                <h5>Category</h5>
+                <p>Category options for closed/opened tickets.</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showView('general-settings')">
+              <div>
+                <h5>Ticket</h5>
+                <p>General Ticket options</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Moderator options active')">
+              <div>
+                <h5>Moderator</h5>
+                <p>Moderator message options</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Permissions synced')">
+              <div>
+                <h5>Permissions</h5>
+                <p>Permission options</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Buttons configured')">
+              <div>
+                <h5>Buttons</h5>
+                <p>Quick access list of all buttons</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Messages active')">
+              <div>
+                <h5>Messages</h5>
+                <p>Quick access list of all messages</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Escalation active')">
+              <div>
+                <h5>Escalate</h5>
+                <p>Escalation Options</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Settings -->
+        <div class="section-block">
+          <h4>Panel Settings</h4>
+          <div class="card-grid-3">
+            <div class="ticket-nav-card" onclick="showView('general-settings')">
+              <div>
+                <h5>Panel</h5>
+                <p>Options for the message used to create tickets</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Command style active')">
+              <div>
+                <h5>Command Style</h5>
+                <p>Options for creating tickets using commands.</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('DropDown style active')">
+              <div>
+                <h5>DropDown Style</h5>
+                <p>Options for creating tickets using select menu.</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Thread style active')">
+              <div>
+                <h5>Thread Style 💎</h5>
+                <p>Thread style tickets, instead of channels.</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Forms active')">
+              <div>
+                <h5>Forms</h5>
+                <p>Form Options</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Advanced Settings -->
+        <div class="section-block">
+          <h4>Advanced Settings</h4>
+          <div class="card-grid-3">
+            <div class="ticket-nav-card" onclick="showView('general-settings')">
+              <div>
+                <h5>Transcript</h5>
+                <p>Options for saving your transcripts</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showView('general-settings')">
+              <div>
+                <h5>Logging</h5>
+                <p>Options for server logging</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Automation enabled')">
+              <div>
+                <h5>Automation 💎</h5>
+                <p>Automation options</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Limits enabled')">
+              <div>
+                <h5>Limits</h5>
+                <p>Limits and scheduling</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Claiming enabled')">
+              <div>
+                <h5>Claiming 💎</h5>
+                <p>Claiming Options</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Integrations active')">
+              <div>
+                <h5>Integrations 💎</h5>
+                <p>External Bot Integrations</p>
+              </div>
+              <span class="card-arrow">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: Menu > General (Screenshot 2) -->
+      <div class="view-container" id="view-general-settings">
+        <div class="subpage-header">
+          <button class="btn-back" onclick="showView('panel-overview')">Back</button>
+          <div class="breadcrumb-text">Menu &gt; General</div>
+        </div>
+
+        <div class="general-grid">
+          <!-- Support Team Roles (Allows ANY role, including roles higher than bot!) -->
+          <div class="config-card">
+            <div class="card-title">
+              Support Team Roles
+              <span title="Any role added here can see and manage tickets, regardless of hierarchy!">ℹ️</span>
+            </div>
+            <div class="roles-box" id="support-roles-container">
+              <!-- Dynamically rendered pills with [x] -->
+            </div>
+            <select id="all-roles-select" class="form-control" onchange="addSupportRole(this.value)">
+              <option value="">+ Add Support Role (All Server Roles)...</option>
             </select>
           </div>
 
-          <!-- Category Created/Opened -->
-          <div class="form-group">
-            <label>
-              Category Created/Opened
-              <span class="help-icon" title="Category where new ticket channels will be created">ℹ️</span>
+          <!-- Additional Roles -->
+          <div class="config-card">
+            <div class="card-title">
+              Additional Roles
+              <span title="Additional roles granted ticket access">ℹ️</span>
+            </div>
+            <div class="roles-box" id="additional-roles-container">
+              <span style="color: var(--text-muted); font-size: 0.85rem;">No additional roles added.</span>
+            </div>
+            <select id="additional-roles-select" class="form-control" onchange="addAdditionalRole(this.value)">
+              <option value="">+ Add Additional Role...</option>
+            </select>
+          </div>
+
+          <!-- Two step Close -->
+          <div class="config-card inline-flex">
+            <div class="card-title">Two step Close ℹ️</div>
+            <label class="switch-wrap">
+              <input type="checkbox" id="twoStepClose" checked>
+              <span class="slider"></span>
             </label>
-            <select id="category-selector">
+          </div>
+
+          <!-- Two step Ticket -->
+          <div class="config-card inline-flex">
+            <div class="card-title">Two step Ticket ℹ️</div>
+            <label class="switch-wrap">
+              <input type="checkbox" id="twoStepTicket" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- Auto Pin Ticket -->
+          <div class="config-card inline-flex">
+            <div class="card-title">Auto Pin Ticket ℹ️</div>
+            <label class="switch-wrap">
+              <input type="checkbox" id="autoPinTicket">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- Ticket Padding -->
+          <div class="config-card inline-flex">
+            <div class="card-title">💎 Ticket Padding ℹ️</div>
+            <div class="stepper">
+              <button class="stepper-btn" onclick="changePadding(-1)">-</button>
+              <div class="stepper-value" id="padding-value">4</div>
+              <button class="stepper-btn" onclick="changePadding(1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category & Channel Routing -->
+        <div class="general-grid" style="margin-top: 20px;">
+          <div class="config-card">
+            <div class="card-title">Category Created/Opened ℹ️</div>
+            <select id="category-dropdown" class="form-control">
               <option value="">Loading categories...</option>
             </select>
           </div>
-        </div>
 
-        <div class="form-row">
-          <!-- Logging Channel -->
-          <div class="form-group">
-            <label>Logging & Transcripts Channel</label>
-            <select id="loggingChannelSelect">
+          <div class="config-card">
+            <div class="card-title">Logging & Transcripts Channel ℹ️</div>
+            <select id="logging-dropdown" class="form-control">
               <option value="">Disabled</option>
             </select>
           </div>
 
-          <!-- Channel to Deploy Panel -->
-          <div class="form-group">
-            <label>Target Channel to Post Ticket Panel</label>
-            <select id="panelChannelSelect">
-              <option value="">Select channel...</option>
+          <div class="config-card">
+            <div class="card-title">Target Channel to Post Ticket Panel</div>
+            <select id="panel-channel-dropdown" class="form-control">
+              <option value="">Select target channel...</option>
             </select>
           </div>
-        </div>
 
-        <!-- Action Buttons -->
-        <div class="button-group">
-          <button class="btn btn-green" onclick="saveConfiguration()">
-            <span>💾</span> Save Config
-          </button>
-          <button class="btn btn-primary" onclick="deployPanel()">
-            <span>🚀</span> Save & Deploy Panel to Discord
-          </button>
-          <button class="btn btn-outline" onclick="openModal('panelModal')">
-            <span>✏️</span> Edit Panel Message
-          </button>
+          <div class="config-card" style="justify-content: center;">
+            <button class="btn btn-green" style="margin-bottom: 8px;" onclick="saveGeneralSettings()">
+              💾 Save General Settings
+            </button>
+            <button class="btn btn-primary" onclick="deployPanelLive()">
+              🚀 Save & Deploy Panel to Discord
+            </button>
+          </div>
         </div>
       </div>
+
+      <!-- VIEW 3: Command Configs (Screenshot 1) -->
+      <div class="view-container" id="view-command-configs">
+        <div class="section-block">
+          <h4>Command Configs</h4>
+          <div class="card-grid-3">
+            <div class="ticket-nav-card" onclick="showToast('Automation command active')">
+              <div><h5>Automation</h5><p>For controlling ticket automation</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Re-Open command active')">
+              <div><h5>Re-Open</h5><p>For opening closed tickets</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Close command active')">
+              <div><h5>Close</h5><p>For closing open tickets</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Close request active')">
+              <div><h5>Close Request</h5><p>For sending the close ask message on command</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Delete command active')">
+              <div><h5>Delete</h5><p>Bypass closing and delete tickets</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Rename command active')">
+              <div><h5>Rename</h5><p>For renaming tickets</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Transcript command active')">
+              <div><h5>Transcript</h5><p>Create a transcript of the last 1000 messages</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Add user active')">
+              <div><h5>Add</h5><p>Add a user to a ticket</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Remove user active')">
+              <div><h5>Remove</h5><p>Remove a user from a ticket</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Claim ticket active')">
+              <div><h5>Claim Ticket</h5><p>Allows support team to claim tickets</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('New ticket command active')">
+              <div><h5>New/Ticket</h5><p>For creating command style Tickets</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Ping command active')">
+              <div><h5>Ping</h5><p>Basic ping command</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Help command active')">
+              <div><h5>Help</h5><p>The help command</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+            <div class="ticket-nav-card" onclick="showToast('Panel deploy active')">
+              <div><h5>Panel</h5><p>For creating the ticket panel</p></div>
+              <span class="card-arrow">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 4: Dashboard History (Screenshot 4) -->
+      <div class="view-container" id="view-dashboard-history">
+        <div class="section-block">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h4>Dashboard History</h4>
+            <span style="font-size: 0.8rem; color: var(--gold);">⚡ Real-Time Audit Log</span>
+          </div>
+
+          <div class="history-table-container">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th>Time<br><input type="text" class="filter-input" placeholder="filter column..."></th>
+                  <th>User ID<br><input type="text" class="filter-input" placeholder="filter column..."></th>
+                  <th>Username<br><input type="text" class="filter-input" placeholder="filter column..."></th>
+                  <th>Panel<br><input type="text" class="filter-input" placeholder="filter column..."></th>
+                  <th>Action<br><input type="text" class="filter-input" placeholder="filter column..."></th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody">
+                <!-- Populated via API -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
-  <!-- Panel Message Modal -->
-  <div class="modal-overlay" id="panelModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Edit Ticket Panel Embed</h3>
-        <button class="modal-close" onclick="closeModal('panelModal')">×</button>
-      </div>
-      <div class="form-group" style="margin-bottom: 14px;">
-        <label>Panel Embed Title</label>
-        <input type="text" id="panelTitleInput" value="📩 Elder Clan Applications & Support">
-      </div>
-      <div class="form-group" style="margin-bottom: 14px;">
-        <label>Panel Embed Description</label>
-        <textarea id="panelDescInput" rows="4">Click the button below to open a private ticket with our staff!</textarea>
-      </div>
-      <div class="form-group" style="margin-bottom: 14px;">
-        <label>Button Label</label>
-        <input type="text" id="buttonTextInput" value="Open Ticket">
-      </div>
-      <div class="form-group" style="margin-bottom: 20px;">
-        <label>Embed Color (Hex)</label>
-        <input type="text" id="panelColorInput" value="#5865f2">
-      </div>
-      <button class="btn btn-primary" style="width: 100%;" onclick="closeModal('panelModal'); saveConfiguration();">Apply Changes</button>
-    </div>
-  </div>
-
-  <!-- Ticket Message Modal -->
-  <div class="modal-overlay" id="ticketModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>Edit Ticket Welcome Message</h3>
-        <button class="modal-close" onclick="closeModal('ticketModal')">×</button>
-      </div>
-      <div class="form-group" style="margin-bottom: 20px;">
-        <label>Message Content (Use {user} for user mention)</label>
-        <textarea id="ticketMessageInput" rows="5">Hello {user}! Welcome to your support ticket.
-Please state your request or application details. Our support team will assist you shortly.</textarea>
-      </div>
-      <button class="btn btn-primary" style="width: 100%;" onclick="closeModal('ticketModal'); saveConfiguration();">Apply Changes</button>
-    </div>
-  </div>
-
-  <!-- Toast Notification -->
-  <div id="toast">✅ Saved successfully!</div>
+  <div id="toast" class="toast">Saved successfully!</div>
 
   <script>
-    let serverData = null;
-    let selectedRoles = [];
+    let currentConfig = {};
+    let allGuildRoles = [];
+    let currentSupportRoles = [];
+    let currentAdditionalRoles = [];
+    let paddingVal = 4;
 
     function showToast(msg) {
       const t = document.getElementById('toast');
@@ -618,45 +919,64 @@ Please state your request or application details. Our support team will assist y
       setTimeout(() => { t.style.display = 'none'; }, 3000);
     }
 
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function showView(viewId) {
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.side-item').forEach(s => s.classList.remove('active'));
 
-    // Fetch live guild data from backend
-    async function loadDashboardData() {
+      if (viewId === 'panel-overview' || viewId === 'general-settings') {
+        document.getElementById('nav-panel').classList.add('active');
+        document.getElementById('view-' + viewId).classList.add('active');
+      } else if (viewId === 'command-configs') {
+        document.getElementById('nav-cmd').classList.add('active');
+        document.getElementById('view-command-configs').classList.add('active');
+      } else if (viewId === 'dashboard-history') {
+        document.getElementById('nav-history').classList.add('active');
+        document.getElementById('view-dashboard-history').classList.add('active');
+        loadHistory();
+      }
+    }
+
+    function changePadding(delta) {
+      paddingVal = Math.max(1, paddingVal + delta);
+      document.getElementById('padding-value').textContent = paddingVal;
+    }
+
+    // Load Live Guild Data
+    async function initDashboard() {
       try {
         const res = await fetch('/api/guild-data');
-        if (!res.ok) throw new Error('Could not fetch guild data');
-        serverData = await res.json();
+        const data = await res.json();
 
-        // Update Guild Header
-        if (serverData.guild) {
-          document.getElementById('guild-name').textContent = serverData.guild.name || 'Elder Clan';
-          document.getElementById('guild-members').textContent = `${serverData.guild.memberCount || 679} members`;
-          if (serverData.guild.icon) {
-            document.getElementById('guild-avatar').innerHTML = `<img src="${serverData.guild.icon}">`;
+        if (data.guild) {
+          document.getElementById('guild-name').textContent = data.guild.name;
+          document.getElementById('guild-members').textContent = `${data.guild.memberCount} members`;
+          if (data.guild.icon) {
+            document.getElementById('guild-avatar').innerHTML = `<img src="${data.guild.icon}">`;
           }
         }
 
-        // Update User info
-        document.getElementById('user-name-display').textContent = 'Staff / Owner Verified ✅';
+        allGuildRoles = data.roles || [];
+        currentConfig = data.config || {};
+        currentSupportRoles = currentConfig.supportRoles || [];
 
         // Populate Categories
-        const catSelect = document.getElementById('category-selector');
+        const catSelect = document.getElementById('category-dropdown');
         catSelect.innerHTML = '<option value="">Server Root (No Category)</option>';
-        serverData.categories.forEach(c => {
+        (data.categories || []).forEach(c => {
           const opt = document.createElement('option');
           opt.value = c.id;
           opt.textContent = c.name;
           catSelect.appendChild(opt);
         });
+        if (currentConfig.categoryId) catSelect.value = currentConfig.categoryId;
 
         // Populate Channels
-        const logSelect = document.getElementById('loggingChannelSelect');
-        const panelSelect = document.getElementById('panelChannelSelect');
+        const logSelect = document.getElementById('logging-dropdown');
+        const panelSelect = document.getElementById('panel-channel-dropdown');
         logSelect.innerHTML = '<option value="">Disabled</option>';
-        panelSelect.innerHTML = '<option value="">Select channel...</option>';
+        panelSelect.innerHTML = '<option value="">Select target channel...</option>';
 
-        serverData.textChannels.forEach(ch => {
+        (data.textChannels || []).forEach(ch => {
           const opt1 = document.createElement('option');
           opt1.value = ch.id;
           opt1.textContent = '#' + ch.name;
@@ -667,84 +987,105 @@ Please state your request or application details. Our support team will assist y
           opt2.textContent = '#' + ch.name;
           panelSelect.appendChild(opt2);
         });
+        if (currentConfig.loggingChannelId) logSelect.value = currentConfig.loggingChannelId;
+        if (currentConfig.panelChannelId) panelSelect.value = currentConfig.panelChannelId;
 
-        // Populate Roles Selector
-        const roleSelect = document.getElementById('role-selector');
-        roleSelect.innerHTML = '<option value="">+ Add a Support Role...</option>';
-        serverData.roles.forEach(r => {
-          if (r.name !== '@everyone') {
-            const opt = document.createElement('option');
-            opt.value = r.id;
-            opt.textContent = r.name;
-            roleSelect.appendChild(opt);
-          }
+        // Populate All Roles Dropdown (Sorted by position, so HIGHEST roles like ELDER LEADER are at top!)
+        const roleSelect = document.getElementById('all-roles-select');
+        const addRoleSelect = document.getElementById('additional-roles-select');
+        roleSelect.innerHTML = '<option value="">+ Add Support Role (All Server Roles)...</option>';
+        addRoleSelect.innerHTML = '<option value="">+ Add Additional Role...</option>';
+
+        allGuildRoles.forEach(r => {
+          const opt1 = document.createElement('option');
+          opt1.value = r.id;
+          opt1.textContent = r.name;
+          roleSelect.appendChild(opt1);
+
+          const opt2 = document.createElement('option');
+          opt2.value = r.id;
+          opt2.textContent = r.name;
+          addRoleSelect.appendChild(opt2);
         });
 
-        // Set Current Config
-        if (serverData.config) {
-          const cfg = serverData.config;
-          if (cfg.categoryId) catSelect.value = cfg.categoryId;
-          if (cfg.loggingChannelId) logSelect.value = cfg.loggingChannelId;
-          if (cfg.panelChannelId) panelSelect.value = cfg.panelChannelId;
-          if (cfg.panelTitle) document.getElementById('panelTitleInput').value = cfg.panelTitle;
-          if (cfg.panelDescription) document.getElementById('panelDescInput').value = cfg.panelDescription;
-          if (cfg.buttonText) document.getElementById('buttonTextInput').value = cfg.buttonText;
-          if (cfg.panelColor) document.getElementById('panelColorInput').value = cfg.panelColor;
-          if (cfg.ticketMessage) document.getElementById('ticketMessageInput').value = cfg.ticketMessage;
-
-          selectedRoles = cfg.supportRoles || [];
-          renderRolePills();
-        }
+        renderSupportRoles();
       } catch (err) {
-        console.error('Error loading data:', err);
+        console.error('Failed to load dashboard:', err);
       }
     }
 
-    function renderRolePills() {
-      const container = document.getElementById('roles-pills-box');
+    function renderSupportRoles() {
+      const container = document.getElementById('support-roles-container');
       container.innerHTML = '';
 
-      if (!selectedRoles || selectedRoles.length === 0) {
-        container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">No support roles added yet. Add one below!</span>';
+      if (!currentSupportRoles || currentSupportRoles.length === 0) {
+        container.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">No support roles added yet. Add any role below!</span>';
         return;
       }
 
-      selectedRoles.forEach(roleId => {
-        const roleObj = serverData.roles.find(r => r.id === roleId);
-        const name = roleObj ? roleObj.name : roleId;
+      currentSupportRoles.forEach(roleId => {
+        const found = allGuildRoles.find(r => r.id === roleId);
+        const name = found ? found.name : roleId;
 
-        const pill = document.createElement('div');
-        pill.className = 'role-pill';
-        pill.innerHTML = `<span>${name}</span> <span class="pill-close" onclick="removeRole('${roleId}')">×</span>`;
-        container.appendChild(pill);
+        const badge = document.createElement('div');
+        badge.className = 'role-badge';
+        badge.innerHTML = `<span>${name}</span> <span class="btn-close-role" onclick="removeSupportRole('${roleId}')">×</span>`;
+        container.appendChild(badge);
       });
     }
 
-    function addSelectedRole(roleId) {
+    function addSupportRole(roleId) {
       if (!roleId) return;
-      if (!selectedRoles.includes(roleId)) {
-        selectedRoles.push(roleId);
-        renderRolePills();
+      if (!currentSupportRoles.includes(roleId)) {
+        currentSupportRoles.push(roleId);
+        renderSupportRoles();
       }
-      document.getElementById('role-selector').value = '';
+      document.getElementById('all-roles-select').value = '';
     }
 
-    function removeRole(roleId) {
-      selectedRoles = selectedRoles.filter(id => id !== roleId);
-      renderRolePills();
+    function removeSupportRole(roleId) {
+      currentSupportRoles = currentSupportRoles.filter(id => id !== roleId);
+      renderSupportRoles();
     }
 
-    async function saveConfiguration() {
+    function addAdditionalRole(roleId) {
+      if (!roleId) return;
+      if (!currentAdditionalRoles.includes(roleId)) {
+        currentAdditionalRoles.push(roleId);
+        renderAdditionalRoles();
+      }
+      document.getElementById('additional-roles-select').value = '';
+    }
+
+    function renderAdditionalRoles() {
+      const container = document.getElementById('additional-roles-container');
+      container.innerHTML = '';
+      currentAdditionalRoles.forEach(roleId => {
+        const found = allGuildRoles.find(r => r.id === roleId);
+        const name = found ? found.name : roleId;
+        const badge = document.createElement('div');
+        badge.className = 'role-badge';
+        badge.innerHTML = `<span>${name}</span> <span class="btn-close-role" onclick="removeAdditionalRole('${roleId}')">×</span>`;
+        container.appendChild(badge);
+      });
+    }
+
+    function removeAdditionalRole(roleId) {
+      currentAdditionalRoles = currentAdditionalRoles.filter(id => id !== roleId);
+      renderAdditionalRoles();
+    }
+
+    async function saveGeneralSettings() {
       const payload = {
-        categoryId: document.getElementById('category-selector').value,
-        supportRoles: selectedRoles,
-        loggingChannelId: document.getElementById('loggingChannelSelect').value,
-        panelChannelId: document.getElementById('panelChannelSelect').value,
-        panelTitle: document.getElementById('panelTitleInput').value,
-        panelDescription: document.getElementById('panelDescInput').value,
-        buttonText: document.getElementById('buttonTextInput').value,
-        panelColor: document.getElementById('panelColorInput').value,
-        ticketMessage: document.getElementById('ticketMessageInput').value
+        categoryId: document.getElementById('category-dropdown').value,
+        loggingChannelId: document.getElementById('logging-dropdown').value,
+        panelChannelId: document.getElementById('panel-channel-dropdown').value,
+        supportRoles: currentSupportRoles,
+        additionalRoles: currentAdditionalRoles,
+        twoStepClose: document.getElementById('twoStepClose').checked,
+        twoStepTicket: document.getElementById('twoStepTicket').checked,
+        autoPinTicket: document.getElementById('autoPinTicket').checked,
+        ticketPadding: paddingVal
       };
 
       try {
@@ -754,20 +1095,18 @@ Please state your request or application details. Our support team will assist y
           body: JSON.stringify(payload)
         });
         if (res.ok) {
-          showToast('✅ Configuration saved successfully!');
-        } else {
-          alert('Error saving configuration.');
+          showToast('✅ Saved changes to General settings!');
         }
-      } catch (e) {
-        alert('Network error while saving.');
+      } catch (err) {
+        alert('Failed to save settings.');
       }
     }
 
-    async function deployPanel() {
-      await saveConfiguration();
-      const channelId = document.getElementById('panelChannelSelect').value;
+    async function deployPanelLive() {
+      await saveGeneralSettings();
+      const channelId = document.getElementById('panel-channel-dropdown').value;
       if (!channelId) {
-        alert('Please select a target channel to post the ticket panel.');
+        alert('Please select a target channel to deploy the panel!');
         return;
       }
 
@@ -779,16 +1118,39 @@ Please state your request or application details. Our support team will assist y
         });
         const json = await res.json();
         if (json.success) {
-          showToast('🚀 Ticket Panel successfully sent to Discord!');
+          showToast(`🚀 Panel deployed to #${json.channel}!`);
         } else {
-          alert('Failed to deploy panel: ' + json.error);
+          alert('Deploy error: ' + json.error);
         }
-      } catch (e) {
-        alert('Deployment failed: ' + e.message);
+      } catch (err) {
+        alert('Deploy failed: ' + err.message);
       }
     }
 
-    window.onload = loadDashboardData;
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/dashboard-history');
+        const data = await res.json();
+        const tbody = document.getElementById('history-tbody');
+        tbody.innerHTML = '';
+
+        (data.history || []).forEach(row => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${row.time}</td>
+            <td><code>${row.userId}</code></td>
+            <td>${row.username}</td>
+            <td>${row.panel}</td>
+            <td><strong>${row.action}</strong></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error('History load error:', err);
+      }
+    }
+
+    window.onload = initDashboard;
   </script>
 </body>
 </html>

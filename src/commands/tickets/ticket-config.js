@@ -25,11 +25,14 @@ export const data = new SlashCommandBuilder()
   )
   .addSubcommand(sub =>
     sub.setName('add-role')
-      .setDescription('Add a Support Team role that can view and answer tickets')
+      .setDescription('Add a Support Team role (works for roles higher than bot!)')
       .addRoleOption(opt =>
         opt.setName('role')
-          .setDescription('Select the staff / support role')
-          .setRequired(true)
+          .setDescription('Select the role from dropdown (if Discord permits)')
+      )
+      .addStringOption(opt =>
+        opt.setName('role-input')
+          .setDescription('Or type Role Name or Role ID (bypasses bot role hierarchy!)')
       )
   )
   .addSubcommand(sub =>
@@ -37,8 +40,11 @@ export const data = new SlashCommandBuilder()
       .setDescription('Remove a Support Team role')
       .addRoleOption(opt =>
         opt.setName('role')
-          .setDescription('Select the role to remove')
-          .setRequired(true)
+          .setDescription('Select role to remove')
+      )
+      .addStringOption(opt =>
+        opt.setName('role-input')
+          .setDescription('Or type Role Name or Role ID')
       )
   )
   .addSubcommand(sub =>
@@ -61,8 +67,25 @@ export const data = new SlashCommandBuilder()
 
 export async function execute(interaction) {
   const subcommand = interaction.options.getSubcommand();
-  const guildId = interaction.guild.id;
-  const currentConfig = await db.getTicketConfig(guildId);
+  const guild = interaction.guild;
+  const currentConfig = await db.getTicketConfig(guild.id);
+
+  // Helper to resolve role from either role option or string input (Name / ID / Mention)
+  function resolveRole() {
+    const directRole = interaction.options.getRole('role');
+    if (directRole) return directRole;
+
+    const input = interaction.options.getString('role-input');
+    if (!input) return null;
+
+    const cleanId = input.replace(/[<@&>]/g, '').trim();
+    if (guild.roles.cache.has(cleanId)) {
+      return guild.roles.cache.get(cleanId);
+    }
+
+    const byName = guild.roles.cache.find(r => r.name.toLowerCase() === input.trim().toLowerCase());
+    return byName || null;
+  }
 
   // 1. VIEW CONFIG
   if (subcommand === 'view') {
@@ -99,7 +122,7 @@ export async function execute(interaction) {
   // 2. SET CATEGORY
   if (subcommand === 'category') {
     const category = interaction.options.getChannel('category');
-    await db.setTicketConfig(guildId, {
+    await db.setTicketConfig(guild.id, {
       categoryId: category.id,
       categoryName: category.name
     });
@@ -113,22 +136,31 @@ export async function execute(interaction) {
     return interaction.reply({ embeds: [embed] });
   }
 
-  // 3. ADD ROLE
+  // 3. ADD ROLE (Allows higher roles like ELDER LEADER, ELDER FOUNDER!)
   if (subcommand === 'add-role') {
-    const role = interaction.options.getRole('role');
-    const roles = currentConfig.supportRoles || [];
+    const targetRole = resolveRole();
 
-    if (roles.includes(role.id)) {
-      return interaction.reply({ content: `ℹ️ Role ${role} is already in the Support Team roles.`, ephemeral: true });
+    if (!targetRole) {
+      return interaction.reply({
+        content: '❌ Please select a role from the dropdown OR provide the role name/ID in `role-input`.',
+        ephemeral: true
+      });
     }
 
-    roles.push(role.id);
-    await db.setTicketConfig(guildId, { supportRoles: roles });
+    const roles = currentConfig.supportRoles || [];
+
+    if (roles.includes(targetRole.id)) {
+      return interaction.reply({ content: `ℹ️ Role ${targetRole} is already in the Support Team roles.`, ephemeral: true });
+    }
+
+    roles.push(targetRole.id);
+    await db.setTicketConfig(guild.id, { supportRoles: roles });
 
     const embed = new EmbedBuilder()
       .setColor(0x2ecc71)
       .setTitle('✅ Support Role Added')
-      .setDescription(`Added ${role} to the Support Team. Members with this role can now see and manage all tickets.`)
+      .setDescription(`Added ${targetRole} to the Support Team.\nMembers with this role can now see and answer all ticket channels.`)
+      .setFooter({ text: 'Hierarchy bypass applied successfully' })
       .setTimestamp();
 
     return interaction.reply({ embeds: [embed] });
@@ -136,20 +168,28 @@ export async function execute(interaction) {
 
   // 4. REMOVE ROLE
   if (subcommand === 'remove-role') {
-    const role = interaction.options.getRole('role');
-    let roles = currentConfig.supportRoles || [];
+    const targetRole = resolveRole();
 
-    if (!roles.includes(role.id)) {
-      return interaction.reply({ content: `❌ Role ${role} was not in the Support Team roles.`, ephemeral: true });
+    if (!targetRole) {
+      return interaction.reply({
+        content: '❌ Please select a role from the dropdown OR provide the role name/ID in `role-input`.',
+        ephemeral: true
+      });
     }
 
-    roles = roles.filter(id => id !== role.id);
-    await db.setTicketConfig(guildId, { supportRoles: roles });
+    let roles = currentConfig.supportRoles || [];
+
+    if (!roles.includes(targetRole.id)) {
+      return interaction.reply({ content: `❌ Role ${targetRole} was not in the Support Team roles.`, ephemeral: true });
+    }
+
+    roles = roles.filter(id => id !== targetRole.id);
+    await db.setTicketConfig(guild.id, { supportRoles: roles });
 
     const embed = new EmbedBuilder()
       .setColor(0xe74c3c)
       .setTitle('🗑️ Support Role Removed')
-      .setDescription(`Removed ${role} from the Support Team.`)
+      .setDescription(`Removed ${targetRole} from the Support Team.`)
       .setTimestamp();
 
     return interaction.reply({ embeds: [embed] });
@@ -158,7 +198,7 @@ export async function execute(interaction) {
   // 5. SET LOGS
   if (subcommand === 'logs') {
     const channel = interaction.options.getChannel('channel');
-    await db.setTicketConfig(guildId, { loggingChannelId: channel.id });
+    await db.setTicketConfig(guild.id, { loggingChannelId: channel.id });
 
     const embed = new EmbedBuilder()
       .setColor(0x2ecc71)
@@ -174,7 +214,7 @@ export async function execute(interaction) {
     const title = interaction.options.getString('title');
     const description = interaction.options.getString('description');
 
-    await db.setTicketConfig(guildId, {
+    await db.setTicketConfig(guild.id, {
       panelTitle: title,
       panelDescription: description
     });
