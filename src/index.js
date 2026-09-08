@@ -30,7 +30,7 @@ app.get('/', (req, res) => {
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
-    clientReady: client.isReady(),
+    clientReady: client ? client.isReady() : false,
     databaseMode: db.mode,
     uptime: process.uptime()
   });
@@ -41,69 +41,83 @@ const server = app.listen(PORT, () => {
 });
 
 // ---------------------------------------------------------
-// 2. Initialize Discord Client with Gateway Intents & Partials
+// 2. Client Creation Helper
 // ---------------------------------------------------------
-const client = new Client({
-  intents: [
+function createClient(usePrivileged = true) {
+  const intents = [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
     GatewayIntentBits.DirectMessages,
-  ],
-  partials: [
-    Partials.Channel,
-    Partials.Message,
-    Partials.User
-  ]
-});
+  ];
 
-client.commands = new Collection();
+  if (usePrivileged) {
+    intents.push(GatewayIntentBits.GuildMembers);
+    intents.push(GatewayIntentBits.MessageContent);
+  }
+
+  const newClient = new Client({
+    intents,
+    partials: [
+      Partials.Channel,
+      Partials.Message,
+      Partials.User
+    ]
+  });
+
+  newClient.commands = new Collection();
+  loadCommandsAndEvents(newClient);
+  return newClient;
+}
 
 // ---------------------------------------------------------
-// 3. Load Commands Recursively
+// 3. Load Commands & Events
 // ---------------------------------------------------------
-const foldersPath = path.join(__dirname, 'commands');
-if (fs.existsSync(foldersPath)) {
-  const commandFolders = fs.readdirSync(foldersPath);
-  for (const folder of commandFolders) {
-    const commandsPath = path.join(foldersPath, folder);
-    if (fs.lstatSync(commandsPath).isDirectory()) {
-      const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-      for (const file of commandFiles) {
-        const filePath = path.join(commandsPath, file);
-        const command = await import(`file://${filePath}`);
-        if ('data' in command && 'execute' in command) {
-          client.commands.set(command.data.name, command);
-          console.log(`[LOADED COMMAND] /${command.data.name} (${folder})`);
-        } else {
-          console.warn(`[WARNING] The command at ${filePath} is missing "data" or "execute".`);
+function loadCommandsAndEvents(targetClient) {
+  // Commands
+  const foldersPath = path.join(__dirname, 'commands');
+  if (fs.existsSync(foldersPath)) {
+    const commandFolders = fs.readdirSync(foldersPath);
+    for (const folder of commandFolders) {
+      const commandsPath = path.join(foldersPath, folder);
+      if (fs.lstatSync(commandsPath).isDirectory()) {
+        const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+        for (const file of commandFiles) {
+          const filePath = path.join(commandsPath, file);
+          import(`file://${filePath}`).then(command => {
+            if ('data' in command && 'execute' in command) {
+              targetClient.commands.set(command.data.name, command);
+            }
+          }).catch(err => {
+            console.error(`[COMMAND LOAD ERROR] ${filePath}:`, err.message);
+          });
         }
       }
     }
   }
-}
 
-// ---------------------------------------------------------
-// 4. Load Events Dynamically
-// ---------------------------------------------------------
-const eventsPath = path.join(__dirname, 'events');
-if (fs.existsSync(eventsPath)) {
-  const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-  for (const file of eventFiles) {
-    const filePath = path.join(eventsPath, file);
-    const event = await import(`file://${filePath}`);
-    if (event.once) {
-      client.once(event.name, (...args) => event.execute(...args));
-    } else {
-      client.on(event.name, (...args) => event.execute(...args));
+  // Events
+  const eventsPath = path.join(__dirname, 'events');
+  if (fs.existsSync(eventsPath)) {
+    const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+    for (const file of eventFiles) {
+      const filePath = path.join(eventsPath, file);
+      import(`file://${filePath}`).then(event => {
+        if (event.once) {
+          targetClient.once(event.name, (...args) => event.execute(...args));
+        } else {
+          targetClient.on(event.name, (...args) => event.execute(...args));
+        }
+      }).catch(err => {
+        console.error(`[EVENT LOAD ERROR] ${filePath}:`, err.message);
+      });
     }
-    console.log(`[LOADED EVENT] ${event.name}`);
   }
 }
 
+let client = createClient(true);
+
 // ---------------------------------------------------------
-// 5. Initialize Database & Login to Discord
+// 4. Initialize Database & Login to Discord
 // ---------------------------------------------------------
 async function startBot() {
   try {
@@ -120,23 +134,36 @@ async function startBot() {
     console.warn('1. Copy .env.example to .env');
     console.warn('2. Add your bot token from Discord Developer Portal');
     console.warn('======================================================\n');
-  } else {
-    client.login(token).catch(err => {
-      console.error('[ERROR] Failed to login to Discord:', err.message);
-    });
+    return;
+  }
+
+  try {
+    await client.login(token);
+  } catch (err) {
+    if (err.message.includes('disallowed intents')) {
+      console.warn('\n⚠️  [GATEWAY INTENTS] Discord Privileged Intents (GuildMembers / MessageContent) are not enabled in Discord Developer Portal.');
+      console.warn('👉 To enable them: Discord Developer Portal > Bot > Privileged Gateway Intents > Toggle ON "Server Members Intent" & "Message Content Intent".');
+      console.warn('🔄 Automatically switching to Standard Intents (Slash commands, tickets, points, and blacklist will work 100%)...\n');
+
+      client.destroy();
+      client = createClient(false);
+      await client.login(token);
+    } else {
+      console.error('[LOGIN ERROR]', err.message);
+    }
   }
 }
 
 startBot();
 
 // ---------------------------------------------------------
-// 6. Graceful Shutdown Handling
+// 5. Graceful Shutdown Handling
 // ---------------------------------------------------------
 function handleShutdown(signal) {
   console.log(`\nReceived ${signal}. Shutting down gracefully...`);
   server.close(() => {
     console.log('[HTTP] Express server closed.');
-    client.destroy();
+    if (client) client.destroy();
     console.log('[DISCORD] Client destroyed.');
     process.exit(0);
   });
