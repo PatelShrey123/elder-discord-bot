@@ -11,5 +11,19 @@ services:
         sync: false
       - key: CLIENT_ID
         sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: MODMAIL_CHANNEL_ID
+        sync: false
+      - key: STAFF_ROLE_ID
+        sync: false
+      - key: GOOGLE_SHEET_URL
+        sync: false
+      - key: GOOGLE_SHEET_CSV_URL
+        sync: false
       - key: PORT
         value: 10000
