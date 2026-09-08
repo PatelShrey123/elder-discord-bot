@@ -55,11 +55,11 @@ function createClient(usePrivileged = true) {
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.DirectMessageReactions,
     GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.MessageContent,
   ];
 
   if (usePrivileged) {
     intents.push(GatewayIntentBits.GuildMembers);
-    intents.push(GatewayIntentBits.MessageContent);
   }
 
   const newClient = new Client({
