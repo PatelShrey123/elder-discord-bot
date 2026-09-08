@@ -1,0 +1,27 @@
+{
+  "name": "elder-discord-bot",
+  "version": "1.0.0",
+  "description": "Elder Discord Bot ready for 24/7 hosting on Render free tier",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy-commands": "node src/deploy-commands.js"
+  },
+  "keywords": [
+    "discord",
+    "discord.js",
+    "render",
+    "bot"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
